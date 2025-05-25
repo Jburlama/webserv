@@ -97,7 +97,7 @@ std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int 
                 name += str[i++];
             if (str[i++] != ':')
                 throw std::logic_error("Error header name must end with ':'");
-            continue; // We go back to the beguinning to clear the white spaces after the colan
+            continue; // We go back to the beginning to clear the white spaces after the colon
         }
         while (!std::isspace(str[i]) && str[i] != ',' && str[i])
             value += str[i++];
