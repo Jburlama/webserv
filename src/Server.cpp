@@ -98,8 +98,12 @@ void Server::handle_request(int clientfd)
 
     if (recv(clientfd, buffer, sizeof(buffer) - 1, 0) == -1) // Request
     	throw std::runtime_error("Server.cpp:line:99\n");
+
+    HttpRequest http_request(buffer);
+
+    std::cout << http_request << "\n";
+
     if (send(clientfd, buffer, strlen(buffer), 0) == -1) // Response
     	throw std::runtime_error("Server.cpp:line:101\n");
 
-    printf("%s\n", buffer); // log
 }

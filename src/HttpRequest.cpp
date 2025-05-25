@@ -16,7 +16,6 @@ HttpRequest::HttpRequest(char *str)
     int state = START;
 
     this->_str = str;
-    std::cout << this->_str << "\n";
 
     for (int i = 0; str[i]; ++i)
     {
@@ -208,4 +207,13 @@ std::map<std::string, std::vector<std::string> > HttpRequest::get_headers()
 std::string HttpRequest::get_body()
 {
     return this->_body;
+}
+
+std::ostream &operator<<(std::ostream &os, HttpRequest &request)
+{
+    os << "Method: " << request.get_method() << "\n";
+    os << "URI Path: " << request.get_path() << "\n";
+    os << "HTTP version: " << request.get_version() << "\n";
+    os << "Body: " << request.get_body() << "\n";
+    return os;
 }

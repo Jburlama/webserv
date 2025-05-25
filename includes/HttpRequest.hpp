@@ -42,3 +42,5 @@ class HttpRequest
         std::map<std::string, std::vector<std::string> >    get_headers();
         std::string                                         get_body();
 };
+
+std::ostream &operator<<(std::ostream &os, HttpRequest &request);
