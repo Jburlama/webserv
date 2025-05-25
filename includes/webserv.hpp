@@ -1,4 +1,5 @@
 #pragma once
+#include <cstring>
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -10,5 +11,6 @@
 #include <stdexcept>
 
 #include "Server.hpp"
+#include "HttpRequest.hpp"
 
 void handle_request(int client_socket);
