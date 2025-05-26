@@ -2,19 +2,22 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 #include "webserv.hpp"
 
-class Server
+class Core
 {
     private:
         int _serverfd;
         struct sockaddr_in _addr;
         fd_set  _socket_set;
     public:
-        Server(); // Don't call default
-        Server(int port);
-        ~Server();
+        Core(); // Don't call default
+        Core(int port);
+        ~Core();
         int get_client();
         int getfd();
         void client_multiplex();

@@ -7,7 +7,7 @@ int main (int argc, char *argv[])
 
 	try
 	{
-        Server server(8000);
+        Core server(8000);
 
         server.client_multiplex();
 	}

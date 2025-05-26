@@ -10,7 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "Server.hpp"
+#include "Core.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 

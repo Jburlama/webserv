@@ -1,17 +1,14 @@
-#include "../includes/Server.hpp"
-#include <fstream>
-#include <iostream>
-#include <string>
+#include "../includes/Core.hpp"
 
-Server::Server()
+Core::Core()
 {
-    throw std::logic_error("Provid port to listen on: Server(int port)");
+    throw std::logic_error("Provid port to listen on: Core(int port)");
 }
 
 // Create a socket for the server to listen on
 // Configure the IP address
 // Declare that the socket is ready to listen
-Server::Server(int port)
+Core::Core(int port)
 {
     int yes;
 
@@ -22,20 +19,20 @@ Server::Server(int port)
 
     this->_serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (setsockopt(this->_serverfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) // Re-use socket if is already in use
-		throw std::runtime_error("Server.cpp:21\n");
+		throw std::runtime_error("Core.cpp:21\n");
     if (bind(this->_serverfd, (const struct sockaddr *)&this->_addr, sizeof(this->_addr)) != 0)
-		throw std::runtime_error("Server.cpp:23\n");
+		throw std::runtime_error("Core.cpp:23\n");
     if (listen(this->_serverfd, SOMAXCONN) != 0)
-		throw std::runtime_error("Server.cpp:25\n");
+		throw std::runtime_error("Core.cpp:25\n");
 }
 
-Server::~Server()
+Core::~Core()
 {
     close(this->_serverfd);
 }
 
 // Wait for a client to send a request
-int Server::get_client()
+int Core::get_client()
 {
     int         client_socket;
     socklen_t   addr_len;
@@ -43,17 +40,17 @@ int Server::get_client()
     addr_len = sizeof(struct sockaddr_in);
     client_socket = accept(this->_serverfd, (struct sockaddr *)&this->_addr, &addr_len);
     if (client_socket == -1)
-    	throw std::runtime_error("Server.cpp:line:41\n");
+    	throw std::runtime_error("Core.cpp:line:41\n");
     return client_socket;
 }
 
-int Server::getfd()
+int Core::getfd()
 {
     return this->_serverfd;
 }
 
 // Handle multiple clients
-void Server::client_multiplex()
+void Core::client_multiplex()
 {
     fd_set copy_socket_set;
     int     client_socket;
@@ -66,7 +63,7 @@ void Server::client_multiplex()
         copy_socket_set = this->_socket_set;
 
         if (select(FD_SETSIZE, &copy_socket_set, NULL, NULL, NULL) < 0)
-		    throw std::runtime_error("Server.cpp:65\n");
+		    throw std::runtime_error("Core.cpp:65\n");
 
         for (int i = 0; i < FD_SETSIZE; ++i)
         {
@@ -93,14 +90,14 @@ void Server::client_multiplex()
 // send a response
 // Recives the request from the client and prints to stdout
 // send back a response with the client request
-void Server::handle_request(int clientfd)
+void Core::handle_request(int clientfd)
 {
     char            buffer[10240];
 
     memset(buffer, 0, sizeof(buffer));
 
     if (recv(clientfd, buffer, sizeof(buffer) - 1, 0) == -1) // Request
-    	throw std::runtime_error("Server.cpp:line:99\n");
+    	throw std::runtime_error("Core.cpp:line:99\n");
 
     HttpRequest http_request(buffer);
     HttpResponse http_response;
@@ -111,7 +108,7 @@ void Server::handle_request(int clientfd)
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
         "Content-Length: 10240\r\n"
-        "Server: webserv\r\n\r\n"
+        "Core: webserv\r\n\r\n"
     );
 
 	std::ifstream   file("html/hello.html");
@@ -124,7 +121,7 @@ void Server::handle_request(int clientfd)
     file.close();
 
     if (send(clientfd, http_response.get_str().c_str(), strlen(http_response.get_str().c_str()) + 1, 0) == -1) // Response
-    	throw std::runtime_error("Server.cpp:line:171\n");
+    	throw std::runtime_error("Core.cpp:line:171\n");
 
     std::cout << "\nResponse Sended\n\n";
 }
