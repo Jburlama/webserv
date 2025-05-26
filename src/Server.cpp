@@ -100,10 +100,75 @@ void Server::handle_request(int clientfd)
     	throw std::runtime_error("Server.cpp:line:99\n");
 
     HttpRequest http_request(buffer);
+    HttpResponse http_response;
 
-    std::cout << http_request << "\n";
+    http_response.set_str(
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: 1024\r\n"
+        "Server: nginx/1.18.0\r\n\r\n"
+    );
 
-    if (send(clientfd, buffer, strlen(buffer), 0) == -1) // Response
+    http_response.set_str(http_response.get_str() +
+            "<!DOCTYPE html>"
+            "<hntml lang='en'>"
+                "<head>"
+                    "<meta charset='UTF-8'>"
+                    "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+                    "<title>Resume</title>"
+                    "<style>"
+                        "body {"
+                            "background: #1f1f1f;"
+                            "color: #ffffff;"
+                            "text-align: center;"
+                        "}"
+                        "a {"
+                            "color: powderblue;"
+                        "}"
+                        ".container {"
+                            "display: flex;"
+                            "height: 50vh;"
+                            "justify-content: center;"
+                            "align-items: center;"
+                        "}"
+                        ".square {"
+                            "height: 1.5em;"
+                            "width: 1.5em;"
+                            "margin: .5em;"
+                            "animation: rotate infinite 1s;"
+                        "}"
+                        ".square1 {"
+                            "background: red;"
+                        "}"
+                        ".square2 {"
+                            "background: orange;"
+                        "}"
+                        ".square3 {"
+                            "background: blue;"
+                        "}"
+                        "@keyframes rotate {"
+                            "from {"
+                                "transform: rotate(-45deg);"
+                            "}"
+                            "to {"
+                                "transform: rotate(45deg);"
+                            "}"
+                        "}"
+                        "</style>"
+                "</head>"
+                "<body>"
+                    "<h1> Hello There! </h1>"
+                    "<h2> This is Webserver</h2>"
+                    "<div class='container'>"
+                        "<div class='square square1'></div>"
+                        "<div class='square square2'></div>"
+                        "<div class='square square3'></div>"
+                    "</div>"
+                "</body>"
+            "</html>"
+    );
+
+    if (send(clientfd, http_response.get_str().c_str(), strlen(http_response.get_str().c_str()), 0) == -1) // Response
     	throw std::runtime_error("Server.cpp:line:101\n");
-
+    std::cout << "Response Sended\n";
 }

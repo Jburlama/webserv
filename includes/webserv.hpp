@@ -12,5 +12,6 @@
 
 #include "Server.hpp"
 #include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 void handle_request(int client_socket);
