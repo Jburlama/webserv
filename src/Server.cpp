@@ -120,7 +120,7 @@ void Server::handle_request(int clientfd)
 	if (!file.is_open())
     	throw std::runtime_error("Failed to open file\n");
 	while (std::getline(file, line))
-        http_response.set_str(http_response.get_str() + line);
+        http_response.set_str(http_response.get_str() + line + '\n');
     file.close();
 
     if (send(clientfd, http_response.get_str().c_str(), strlen(http_response.get_str().c_str()) + 1, 0) == -1) // Response
