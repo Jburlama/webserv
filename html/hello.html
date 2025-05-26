@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<hntml lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+        <title>Resume</title>
+        <style>
+            body {
+                background: #1f1f1f;
+                color: #ffffff;
+                text-align: center;
+            }
+            a {
+                color: powderblue;
+            }
+
+            .container {
+                display: flex;
+                height: 50vh;
+                justify-content: center;
+                align-items: center;
+            }
+            .square {
+                height: 1.5em;
+                width: 1.5em;
+                margin: .5em;
+                animation: rotate infinite 1s;
+            }
+            .square1 {
+                background: red;
+            }
+            .square2 {
+                background: orange;
+            }
+            .square3 {
+                background: blue;
+            }
+            @keyframes rotate {
+                from {
+                    transform: rotate(-45deg);
+                }
+                to {
+                    transform: rotate(45deg);
+                }
+            }
+            </style>
+    </head>
+    <body>
+        <h1> Hello There! </h1>
+        <h2> This is WebServ! </h2>
+
+        <div class='container'>
+            <div class='square square1'></div>
+            <div class='square square2'></div>
+            <div class='square square3'></div>
+        </div>
+    </body>
+</html>
