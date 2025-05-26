@@ -102,6 +102,8 @@ void Server::handle_request(int clientfd)
     HttpRequest http_request(buffer);
     HttpResponse http_response;
 
+    std::cout << "[ Request ]\n"<< http_request << "\n";
+
     http_response.set_str(
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n"
@@ -169,6 +171,6 @@ void Server::handle_request(int clientfd)
     );
 
     if (send(clientfd, http_response.get_str().c_str(), strlen(http_response.get_str().c_str()), 0) == -1) // Response
-    	throw std::runtime_error("Server.cpp:line:101\n");
-    std::cout << "Response Sended\n";
+    	throw std::runtime_error("Server.cpp:line:171\n");
+    std::cout << "Response Sended\n\n";
 }
