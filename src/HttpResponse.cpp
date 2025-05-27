@@ -1,5 +1,24 @@
 #include "../includes/HttpResponse.hpp"
 
+HttpResponse::HttpResponse(std::string method, int clientfd)
+{
+    std::map<std::string, std::vector<std::string> > headers;
+
+    this->_content_length = 0;
+    this->set_date();
+    this->set_version("HTTP/1.1");
+    this->set_status_code(200);
+    this->set_content_type("text/html");
+    this->set_server("webserv");
+    this->set_body("html/hello.html");
+    if (method.compare("GET") == 0)
+    {
+        this->set_str();
+        if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)
+            throw std::runtime_error("Core.cpp:line:171\n");
+    }
+}
+
 std::string HttpResponse::get_str()
 {
     return this->_str;
@@ -19,9 +38,24 @@ std::string HttpResponse::get_descrition()
     return this->_description;
 }
 
-std::map<std::string, std::vector<std::string> > HttpResponse::get_headers()
+std::string HttpResponse::get_date()
 {
-    return this->_headers;
+    return this->_date;
+}
+
+size_t HttpResponse::get_content_lenght()
+{
+    return this->_content_length;
+}
+
+std::vector<std::string> HttpResponse::get_content_type()
+{
+    return this->_content_type;
+}
+
+std::string HttpResponse::get_server()
+{
+    return this->_server;
 }
 
 std::string HttpResponse::get_body()
@@ -29,9 +63,36 @@ std::string HttpResponse::get_body()
     return this->_body;
 }
 
-void HttpResponse::set_str(std::string str)
+void HttpResponse::set_str()
 {
-    this->_str = str;
+    std::ostringstream stream;
+
+    this->_str = this->_version + " ";
+    switch (this->_status_code)
+    {
+        case 200:
+            this->_str += "200 " + this->_description + "\r\n";
+            break ;
+        default:
+            break;
+    }
+    if (!this->_date.empty())
+        this->_str += "Date: " + this->_date + "\r\n";
+    if (!this->_content_type.empty())
+    {
+        for (std::vector<std::string>::iterator it = this->_content_type.begin(); it != this->_content_type.end(); ++it)
+            this->_str += "Content-Type: " + *it + "\r\n";
+    }
+    if (!this->_server.empty())
+        this->_str += "Server: " + this->_server + "\r\n";
+    if (this->_content_length != 0)
+    {
+        stream << this->_content_length;
+        this->_str += "Content-Lenght: " + stream.str() + "\r\n";
+    }
+    this->_str += "\r\n";
+    if (!this->_body.empty())
+        this->_str += this->_body;
 }
 
 void HttpResponse::set_version(std::string version)
@@ -42,19 +103,46 @@ void HttpResponse::set_version(std::string version)
 void HttpResponse::set_status_code(int code)
 {
     this->_status_code = code;
+    switch (code)
+    {
+        case 200:
+            this->_description = "OK";
+        default:
+            break;
+    }
 }
 
-void HttpResponse::set_descrition(std::string description)
+void HttpResponse::set_date()
 {
-    this->_description = description;
+    char date[1000];
+    time_t now = time(0);
+
+    memset(date, 0, 1000);
+    struct tm tm = *gmtime(&now);
+    strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %Z", &tm);
+
+    this->_date = date;
 }
 
-void HttpResponse::set_headers(std::map<std::string, std::vector<std::string> > headers)
+void HttpResponse::set_content_type(std::string type)
 {
-    this->_headers = headers;
+    this->_content_type.insert(this->_content_type.end(), type);
 }
 
-void HttpResponse::set_body(std::string body)
+void HttpResponse::set_server(std::string name)
 {
-    this->_body = body;
+    this->_server = name;
+}
+
+void HttpResponse::set_body(std::string file_path)
+{
+    std::ifstream   file(file_path.c_str());
+    std::string     line;
+
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open file\n");
+    while (std::getline(file, line))
+        this->_body += line + '\n';
+    file.close();
+    this->_content_length = strlen(this->_body.c_str());
 }

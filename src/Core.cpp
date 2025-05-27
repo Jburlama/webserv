@@ -93,8 +93,7 @@ void Core::client_multiplex()
                 }
                 else
                 {
-                    this->handle_request(i);
-                    close(i); // close client socket fd
+                    this->handle_message(i);
                     FD_CLR(i, &this->_socket_set); // rm from set
                 }
             }
@@ -107,9 +106,10 @@ void Core::client_multiplex()
 // send a response
 // Recives the request from the client and prints to stdout
 // send back a response with the client request
-void Core::handle_request(int clientfd)
+void Core::handle_message(int clientfd)
 {
     char            buffer[10240];
+    std::string     request_method;
 
     memset(buffer, 0, sizeof(buffer));
 
@@ -117,28 +117,8 @@ void Core::handle_request(int clientfd)
     	throw std::runtime_error("Core.cpp:line:99\n");
 
     HttpRequest http_request(buffer);
-    HttpResponse http_response;
+    HttpResponse http_response(http_request.get_method(), clientfd);
 
-    std::cout << "[ Request ]\n"<< http_request << "\n";
-
-    http_response.set_str(
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: 10240\r\n"
-        "Core: webserv\r\n\r\n"
-    );
-
-	std::ifstream   file("html/hello.html");
-    std::string     line;
-
-	if (!file.is_open())
-    	throw std::runtime_error("Failed to open file\n");
-	while (std::getline(file, line))
-        http_response.set_str(http_response.get_str() + line + '\n');
-    file.close();
-
-    if (send(clientfd, http_response.get_str().c_str(), strlen(http_response.get_str().c_str()) + 1, 0) == -1) // Response
-    	throw std::runtime_error("Core.cpp:line:171\n");
-
+    close(clientfd); // close client socket fd
     std::cout << "\nResponse Sended\n\n";
 }

@@ -26,5 +26,5 @@ class Core
         int get_client(int server_fd);
         bool is_server_fd(int fd);
         void client_multiplex();
-        void handle_request(int client_socket);
+        void handle_message(int client_socket);
 };
