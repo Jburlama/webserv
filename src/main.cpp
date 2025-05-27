@@ -4,10 +4,13 @@ int main (int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
+    std::vector<int> ports;
 
+    ports.insert(ports.end(), 8000);
+    ports.insert(ports.end(), 8001);
 	try
 	{
-        Core server(8000);
+        Core server(ports);
 
         server.client_multiplex();
 	}

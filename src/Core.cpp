@@ -8,54 +8,70 @@ Core::Core()
 // Create a socket for the server to listen on
 // Configure the IP address
 // Declare that the socket is ready to listen
-Core::Core(int port)
+Core::Core(std::vector<int> ports)
 {
-    int yes;
+    Listen  listen_on;
+    int     yes;
 
     yes = 1;
-    this->_addr.sin_family = AF_INET;
-    this->_addr.sin_port = htons(port);
-    this->_addr.sin_addr.s_addr = INADDR_ANY;
+    for (std::vector<int>::iterator it = ports.begin(); it != ports.end(); ++it)
+    {
+        listen_on.addr.sin_family = AF_INET;
+        listen_on.addr.sin_port = htons(*it);
+        listen_on.addr.sin_addr.s_addr = INADDR_ANY;
 
-    this->_serverfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (setsockopt(this->_serverfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) // Re-use socket if is already in use
-		throw std::runtime_error("Core.cpp:21\n");
-    if (bind(this->_serverfd, (const struct sockaddr *)&this->_addr, sizeof(this->_addr)) != 0)
-		throw std::runtime_error("Core.cpp:23\n");
-    if (listen(this->_serverfd, SOMAXCONN) != 0)
-		throw std::runtime_error("Core.cpp:25\n");
+        listen_on.serverfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (setsockopt(listen_on.serverfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) // Re-use socket if is already in use
+            throw std::runtime_error("Core.cpp:21\n");
+        if (bind(listen_on.serverfd, (const struct sockaddr *)&listen_on.addr, sizeof(listen_on.addr)) != 0)
+            throw std::runtime_error("Core.cpp:23\n");
+        if (listen(listen_on.serverfd, SOMAXCONN) != 0)
+            throw std::runtime_error("Core.cpp:25\n");
+        this->_listen.insert(this->_listen.end(), listen_on);
+    }
 }
 
 Core::~Core()
 {
-    close(this->_serverfd);
+    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+        close(it->serverfd);
 }
 
 // Wait for a client to send a request
-int Core::get_client()
+int Core::get_client(int server_fd)
 {
     int         client_socket;
     socklen_t   addr_len;
 
     addr_len = sizeof(struct sockaddr_in);
-    client_socket = accept(this->_serverfd, (struct sockaddr *)&this->_addr, &addr_len);
+    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+    {
+        if (it->serverfd == server_fd)
+            client_socket = accept(server_fd, (struct sockaddr *)&it->addr, &addr_len);
+    }
     if (client_socket == -1)
     	throw std::runtime_error("Core.cpp:line:41\n");
     return client_socket;
 }
 
-int Core::getfd()
+bool Core::is_server_fd(int fd)
 {
-    return this->_serverfd;
+    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+    {
+        if (it->serverfd == fd)
+            return true;
+    }
+    return false;
 }
 
 // Handle multiple clients
 void Core::client_multiplex()
 {
-    fd_set copy_socket_set;
+    fd_set  copy_socket_set;
     int     client_socket;
     FD_ZERO(&this->_socket_set);
-    FD_SET(this->_serverfd, &this->_socket_set);
+    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+        FD_SET(it->serverfd, &this->_socket_set);
     
     while (42)
     {
@@ -69,10 +85,10 @@ void Core::client_multiplex()
         {
             if (FD_ISSET(i, &copy_socket_set)) // checking if fd is ready for reading
             {
-                if (i == this->_serverfd)
+                if (is_server_fd(i))
                 {
                     // this is a new connection
-                    client_socket = this->get_client();
+                    client_socket = this->get_client(i);
                     FD_SET(client_socket, &this->_socket_set); // add the client to set
                 }
                 else
@@ -84,7 +100,8 @@ void Core::client_multiplex()
             }
         }
     }
-    FD_CLR(this->_serverfd, &this->_socket_set);
+    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+        FD_CLR(it->serverfd, &this->_socket_set);
 }
 
 // send a response
