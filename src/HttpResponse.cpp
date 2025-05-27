@@ -1,9 +1,10 @@
 #include "../includes/HttpResponse.hpp"
 
-HttpResponse::HttpResponse(std::string method, int clientfd)
+HttpResponse::HttpResponse(HttpRequest &request, int clientfd)
 {
     std::map<std::string, std::vector<std::string> > headers;
 
+    headers = request.get_headers();
     this->_content_length = 0;
     this->set_date();
     this->set_version("HTTP/1.1");
@@ -11,7 +12,7 @@ HttpResponse::HttpResponse(std::string method, int clientfd)
     this->set_content_type("text/html");
     this->set_server("webserv");
     this->set_body("html/hello.html");
-    if (method.compare("GET") == 0)
+    if (request.get_method().compare("GET") == 0)
     {
         this->set_str();
         if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)

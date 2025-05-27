@@ -114,10 +114,10 @@ void Core::handle_message(int clientfd)
     memset(buffer, 0, sizeof(buffer));
 
     if (recv(clientfd, buffer, sizeof(buffer) - 1, 0) == -1) // Request
-    	throw std::runtime_error("Core.cpp:line:99\n");
+    	throw std::runtime_error("Core.cpp:line:116\n");
 
     HttpRequest http_request(buffer);
-    HttpResponse http_response(http_request.get_method(), clientfd);
+    HttpResponse http_response(http_request, clientfd);
 
     close(clientfd); // close client socket fd
     std::cout << "\nResponse Sended\n\n";

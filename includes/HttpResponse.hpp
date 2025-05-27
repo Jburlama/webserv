@@ -9,20 +9,22 @@
 #include <sstream>
 #include <iostream>
 
+#include "HttpRequest.hpp"
+
 class HttpResponse
 {
     private:
-        std::string                                         _str;
-        std::string                                         _version;
-        int                                                 _status_code;
-        std::string                                         _description;
+        std::string                                         _str; // All the data sent
+        std::string                                         _version; // HTTP/1.1
+        int                                                 _status_code; 
+        std::string                                         _description; // status code desc
         std::string                                         _date;
-        std::vector<std::string>                            _content_type;
-        size_t                                              _content_length;
-    std::string                                             _server;
-        std::string                                         _body;
+        std::vector<std::string>                            _content_type; // e.g text/html
+        size_t                                              _content_length; // the exact byte count of the body
+        std::string                                         _server; // software name (webserv)
+        std::string                                         _body; // page content
     public:
-        HttpResponse(std::string method, int clientfd);
+        HttpResponse(HttpRequest &request, int clientfd);
 
         std::string                                         get_str();
         std::string                                         get_version();
