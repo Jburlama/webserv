@@ -13,5 +13,6 @@
 #include "Core.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "config.hpp"
 
 void handle_request(int client_socket);

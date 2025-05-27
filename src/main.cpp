@@ -1,9 +1,35 @@
 #include "../includes/webserv.hpp"
 
+void configTesting(configValues test){
+	double lis = test.get_listen();
+	std::cout << "Listen: " << lis << std::endl; //8080
+	std::string str = test.get_host();
+	std::cout << "host: " << str << std::endl; //127.0.0.1
+	str = test.get_serverName();
+	std::cout << "serverName: " << str << std::endl; //localhost
+	str = test.get_errorPage();
+	std::cout << "ErrorPage " << str << std::endl; //404 /404.html
+	str = test.get_clientMaxBodySize();
+	std::cout << "ClientMaxBodySize: " << str << std::endl; //1024
+	str = test.get_root();
+	std::cout << "root: " << str << std::endl; // /var/www/html
+	str = test.get_index();
+	std::cout << "index: " << str << std::endl;
+}
+
 int main (int argc, char *argv[])
 {
     (void)argc;
-    (void)argv;
+    //(void)argv;
+
+	try{
+		std::string configFile = argv[1];
+		configValues test(configFile);
+		configTesting(test);
+	}
+	catch(std::exception &e){
+		std::cerr << "General exception within config" << std::endl;
+	}
 
 	try
 	{
