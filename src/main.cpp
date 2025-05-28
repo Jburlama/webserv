@@ -19,21 +19,29 @@ void configTesting(configValues test){
 
 int main (int argc, char *argv[])
 {
-    (void)argc;
+    //(void)argc;
     //(void)argv;
-
-	try{
+	if (argc == 2){
+		
+		try{
 		std::string configFile = argv[1];
 		configValues test(configFile);
 		configTesting(test);
+		}
+		catch(std::exception &e){
+			std::cerr << "General exception within config" << std::endl;
+		}
 	}
-	catch(std::exception &e){
-		std::cerr << "General exception within config" << std::endl;
-	}
+	else {std::cerr << "Missing .config file" << std::endl;}
 
+    (void)argv;
+    std::vector<int> ports;
+
+    ports.insert(ports.end(), 8000);
+    ports.insert(ports.end(), 8001);
 	try
 	{
-        Core server(8000);
+        Core server(ports);
 
         server.client_multiplex();
 	}

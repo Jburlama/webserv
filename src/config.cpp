@@ -7,12 +7,16 @@ configValues::configValues(std::string &configFile){
 
 configValues::~configValues(){}
 
+void parseServerWord(){
+
+}
+
 /* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
-        return;
+        return ;
     }
 
     std::string line;
@@ -38,21 +42,20 @@ void configValues::parseConfig(const std::string& configFile){
         }
 		else if (line == "server"){
    			/* Look ahead to see if next line is '{' */
-   			//std::streampos prevPos = file.tellg(); // save current position
 			std::string nextLine;
 			while (std::getline(file, nextLine)) {
         		/* Trim whitespace from nextLine */
         		nextLine.erase(0, nextLine.find_first_not_of(" \t"));
         		nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
 
-				if (nextLine != "{" || nextLine != " " || nextLine != "\n" || nextLine != "\t"){
+				if (nextLine == "{" || nextLine == " " || nextLine == "\n" || nextLine == "\t"){
         			if (nextLine == "{") {
         			    insideServerBlock = true;
 						break;
         			}
 				}
 				else{
-					throw std::exception &e ;
+					throw std::exception();
 				}
   			}
 			//file.seekg(prevPos); // Reset to previous position
@@ -69,9 +72,6 @@ void configValues::parseConfig(const std::string& configFile){
         /* Remove trailing semicolon(;) */
         if (!line.empty() && line[line.length() - 1] == ';')
    		line.erase(line.length() - 1);
-
-
-
 
         std::istringstream iss(line); //splits a line into words/tokens
         std::string key;

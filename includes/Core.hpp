@@ -5,21 +5,26 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "webserv.hpp"
+
+struct Listen {
+    int                 serverfd;
+    struct sockaddr_in  addr;
+};
 
 class Core
 {
     private:
-        int _serverfd;
-        struct sockaddr_in _addr;
-        fd_set  _socket_set;
+        std::vector<Listen> _listen;
+        fd_set              _socket_set;
     public:
         Core(); // Don't call default
-        Core(int port);
+        Core(std::vector<int> ports);
         ~Core();
-        int get_client();
-        int getfd();
+        int get_client(int server_fd);
+        bool is_server_fd(int fd);
         void client_multiplex();
         void handle_request(int client_socket);
 };
