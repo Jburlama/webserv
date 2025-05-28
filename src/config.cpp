@@ -7,8 +7,8 @@ configValues::configValues(std::string &configFile){
 
 configValues::~configValues(){}
 
-void parseServerWord(){
-
+void parseLocatePart(std::ifstream file, std::string line){
+	/* Create a loop that will give this function the line I need */
 }
 
 /* Take info from .config and store it in this class */
@@ -33,13 +33,26 @@ void configValues::parseConfig(const std::string& configFile){
 
         /* Detect start of server block */
         if (line == "server{"){
-            insideServerBlock = true;
-            continue;
+			if (insideServerBlock == false)
+            	insideServerBlock = true;
+            else {throw std::out_of_range("Can't have a server{} inside another server!");}
         }	
-		else if (line.find("server") == 0 && line.find("{") != std::string::npos) {
-            insideServerBlock = true;
-            continue;
-        }
+		/* Detect start of server block: if "{" is in the same line */
+		else if (line.find("server") == 0 && line.find("{") != std::string::npos){
+			std::istringstream iss(line);
+			std::string first, second, third;
+			iss >> first >> second >> third;
+			(void)third;
+
+			if (first == "server" && second == "{"){
+				insideServerBlock = true;
+				//continue;
+			}
+			else{
+				throw std::runtime_error("Invalid syntax: unexpected token(s) after 'server'");
+			}
+		}
+
 		else if (line == "server"){
    			/* Look ahead to see if next line is '{' */
 			std::string nextLine;
@@ -61,7 +74,7 @@ void configValues::parseConfig(const std::string& configFile){
 			//file.seekg(prevPos); // Reset to previous position
 		}
 
-        /* Detect end of server block */                                  /* When I add location{} this will have to change (or loop location{} without reaching this line until it breaks) */
+        /* Detect end of server block */
         if (line == "}"){
             insideServerBlock = false;
             break; //Stop parsing after first server block                /* Trying to figure out how to save the next server block data */
@@ -71,7 +84,7 @@ void configValues::parseConfig(const std::string& configFile){
 
         /* Remove trailing semicolon(;) */
         if (!line.empty() && line[line.length() - 1] == ';')
-   		line.erase(line.length() - 1);
+   			line.erase(line.length() - 1);
 
         std::istringstream iss(line); //splits a line into words/tokens
         std::string key;

@@ -19,7 +19,7 @@ class configValues{
 		//std::vector<int> _serverFD; //_listen
 
 		void parseConfig(const std::string& configFile);
-		void parseServerWord();
+		void parseLocatePart();
 
 	public:
 		configValues(std::string &configFile);
