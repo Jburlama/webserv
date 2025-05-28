@@ -3,7 +3,7 @@
     <head>
         <meta charset='UTF-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
-        <title>Resume</title>
+        <title> Index </title>
         <style>
             body {
                 background: #1f1f1f;
@@ -13,10 +13,9 @@
             a {
                 color: powderblue;
             }
-
             .container {
                 display: flex;
-                height: 50vh;
+                height: 40vh;
                 justify-content: center;
                 align-items: center;
             }
@@ -48,6 +47,12 @@
     <body>
         <h1> Hello There! </h1>
         <h2> This is WebServ! </h2>
+
+        <h3> Upload a File </h3>
+	    <form enctype="application/octet-stream" action = "/upload" method="post" >
+            <p>File: <input type="file" name="filename" id="fileid">
+                <input type="submit" value="SEND" href="#"></p>
+        </form>
 
         <div class='container'>
             <div class='square square1'></div>

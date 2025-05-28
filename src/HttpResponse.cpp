@@ -3,21 +3,45 @@
 HttpResponse::HttpResponse(HttpRequest &request, int clientfd)
 {
     std::map<std::string, std::vector<std::string> > headers;
-
     headers = request.get_headers();
-    this->_content_length = 0;
-    this->set_date();
+
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
-    this->set_status_code(200);
-    if (this->get_status_code() == 200)
+    this->set_date();
+    this->_content_length = 0;
+    if (request.get_method().compare("GET") == 0)
     {
         this->set_content_type("text/html");
-        this->set_body("html/index.html");
-        this->set_str();
-        if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)
-            throw std::runtime_error("HttpResponse.cpp:line:18\n");
+        this->set_status_code(200);
+        if (this->get_status_code() == 200)
+        {
+            this->set_body("content/html/index.html");
+            this->set_str();
+        }
+        else if (this->get_status_code() == 404)
+        {
+            this->set_body("html/error_pages/page_not_found.html");
+            this->set_str();
+        }
     }
+    else if (request.get_method().compare("POST") == 0)
+    {
+        std::cout << "Content Type: " << headers["Content-Type"][0] << "\n";
+        std::cout << request;
+
+        // TODO: multipart/form-data
+        if (headers["Content-Type"][0].compare("multipart/form-data") == 0)
+        {
+            std::cout << "Content-Type is multipart/form-data\n";
+        }
+        else if (headers["Content-Type"][0].compare("application/octet-stream") == 0)
+        {
+            std::cout << request;
+        }
+        this->set_str();
+    }
+    if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)
+        throw std::runtime_error("HttpResponse.cpp:line:18\n");
 }
 
 std::string HttpResponse::get_str()
@@ -74,6 +98,8 @@ void HttpResponse::set_str()
         case 200:
             this->_str += "200 " + this->_description + "\r\n";
             break ;
+        case 404:
+            this->_str += "404 " + this->_description + "\r\n";
         default:
             break;
     }
@@ -89,7 +115,7 @@ void HttpResponse::set_str()
     if (this->_content_length != 0)
     {
         stream << this->_content_length;
-        this->_str += "Content-Lenght: " + stream.str() + "\r\n";
+        this->_str += "Content-Length: " + stream.str() + "\r\n";
     }
     this->_str += "\r\n";
     if (!this->_body.empty())
@@ -108,6 +134,8 @@ void HttpResponse::set_status_code(int code)
     {
         case 200:
             this->_description = "OK";
+        case 404:
+            this->_description = "Not Found";
         default:
             break;
     }

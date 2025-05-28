@@ -99,7 +99,7 @@ std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int 
                 throw std::logic_error("Error header name must end with ':'");
             continue; // We go back to the beginning to clear the white spaces after the colon
         }
-        while (!std::isspace(str[i]) && str[i] != ',' && str[i])
+        while (!std::isspace(str[i]) && str[i] != ',' && str[i] != ';' && str[i])
             value += str[i++];
         headers[name].insert(headers[name].end(), value);
         ++i;
