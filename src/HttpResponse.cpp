@@ -8,15 +8,15 @@ HttpResponse::HttpResponse(HttpRequest &request, int clientfd)
     this->_content_length = 0;
     this->set_date();
     this->set_version("HTTP/1.1");
-    this->set_status_code(200);
-    this->set_content_type("text/html");
     this->set_server("webserv");
-    this->set_body("html/hello.html");
-    if (request.get_method().compare("GET") == 0)
+    this->set_status_code(200);
+    if (this->get_status_code() == 200)
     {
+        this->set_content_type("text/html");
+        this->set_body("html/index.html");
         this->set_str();
         if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)
-            throw std::runtime_error("Core.cpp:line:171\n");
+            throw std::runtime_error("HttpResponse.cpp:line:18\n");
     }
 }
 
