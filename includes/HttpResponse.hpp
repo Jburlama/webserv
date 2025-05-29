@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 
 #include "HttpRequest.hpp"
 
