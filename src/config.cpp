@@ -13,7 +13,6 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 
 	/* Detect start of location block: */
 	if (firstLine.find("location") == 0 && firstLine.find("{") != std::string::npos){
-		std::cout << "Inside if: " << firstLine << std::endl;
 		std::istringstream iss(firstLine);
 		std::string first, second, third;
 		iss >> first >> second >> third;
@@ -35,7 +34,6 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
         /* Remove leading/trailing whitespace */
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
-		std::cout << "Inside loop: " << line  << "\nInside? " << insideLocationBlock << std::endl;
 
         /* Skip empty lines and comments */
         if (line.empty() || line[0] == '#')
@@ -105,6 +103,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 /* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
     std::ifstream file(configFile.c_str());
+	_listen = 8000; /* Default */                                     /* DOUBLE CHECK THIS LATER, THE ACTUAL */
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
         return ;
@@ -131,9 +130,8 @@ void configValues::parseConfig(const std::string& configFile){
 		/* Detect start of server block: if "{" is in the same line */
 		else if (line.find("server") == 0 && line.find("{") != std::string::npos){
 			std::istringstream iss(line);
-			std::string first, second, third;
-			iss >> first >> second >> third;
-			(void)third;
+			std::string first, second;
+			iss >> first >> second;
 
 			if (first == "server" && second == "{"){
 				if (insideServerBlock == false)
@@ -146,28 +144,42 @@ void configValues::parseConfig(const std::string& configFile){
 			}
 		}
 
-		else if (line == "server"){
+		else if (line.find("server") == 0 && line.find("server_name") != 0){
+			std::istringstream iss(line);
+    		std::string keyword, invalid;
+    		iss >> keyword >> invalid;
+
+			std::cout << keyword << std::endl;
+			std::cout << invalid << std::endl;
+
+			if (!invalid.empty()){
+				throw std::out_of_range("Can't have a server{} inside another server!");
+			}
+
+
    			/* Look ahead to see if next line is '{' */
 			std::string nextLine;
 			while (std::getline(file, nextLine)) {
+
         		/* Trim whitespace from nextLine */
         		nextLine.erase(0, nextLine.find_first_not_of(" \t"));
         		nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
 
-				if (nextLine == "{" || nextLine == " " || nextLine == "\n" || nextLine == "\t"){
-        			if (nextLine == "{"){
-						if (insideServerBlock == false){
-        			    	insideServerBlock = true;
-							break;
-						}
-						else {throw std::out_of_range("Can't have a server{} inside another server!");}
-        			}
+				/* Skip empty lines */
+				if (nextLine.empty())
+					continue;
+
+        		if (nextLine == "{"){
+					if (insideServerBlock == false){
+        				insideServerBlock = true;
+						break;
+					}
+					else {throw std::out_of_range("Can't have a server{} inside another server!");}
 				}
-				else{
-					throw std::exception();
-				}
+				/* Found anything else? */
+				throw std::exception();
   			}
-			//file.seekg(prevPos); // Reset to previous position
+			
 		}
 
         /* Detect end of server block */
@@ -196,6 +208,8 @@ void configValues::parseConfig(const std::string& configFile){
             std::string value;
             iss >> value;
             _listen = atof(value.c_str());
+			if (_listen <= 0 || _listen > 9999)
+				throw std::out_of_range("Invalid listen value!");
         }
 		else if (key == "host"){
             iss >> _host;

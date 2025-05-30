@@ -35,19 +35,6 @@ void configTesting(configValues test){
 	bool _bool = false;
 	_bool = test.get_location_autoindex();
 	std::cout << "autoIndex: " << _bool << std::endl;
-	
-/*
-		else if (key == "location_autoindex") {
-    		std::string value;
-    		iss >> value;
-
-    		if (value == "on")
-    		    _location_autoindex = true;
-    		else if (value == "off")
-    		    _location_autoindex = false;
-    		else
-    		    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
-		} */
 }
 
 int main (int argc, char *argv[])
