@@ -8,7 +8,7 @@
 
 class configValues{
 	private:
-		double _listen;
+		std::string _listen;
 		std::string _host;
 		std::string _serverName;
 		std::string _errorPage;
@@ -29,12 +29,14 @@ class configValues{
 
 		void parseConfig(const std::string& configFile);
 		void parseLocatePart(std::ifstream &file, std::string &line, std::string locationLine);
+    void defaultPreConfigs();
+    void defaultConfigs(int isThereA_listen, int isThereA_host);
 
 	public:
 		configValues(std::string &configFile);
 		~configValues();
 		
-		double get_listen() const;
+    std::string get_listen() const;
 		std::string get_host() const;
 		std::string get_serverName() const;
 		std::string get_errorPage() const;

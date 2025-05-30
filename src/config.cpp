@@ -98,12 +98,38 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 	}
 }
 
+void configValues::defaultPreConfigs(){
+	_listen = "80"; 					// Default port
+    _host = "0.0.0.0"; 					// All interfaces
+    _serverName = "";
+    _errorPage = "";
+    _clientMaxBodySize = "1024";
+    _root = "./www";
+    _index = "index.html";
 
+    _location_index = "index.html";
+    _location_allow_methods = "GET";
+    _location_upload_store = "";
+    _location_cgi_pass = "";
+    _location_cgi_path = "";
+    _location_cgi_ext = "";
+    _location_root = "./www";
+    _location_autoindex = false;      	 // off
+}
+
+void configValues::defaultConfigs(int isThereA_listen, int isThereA_host){
+	if (isThereA_listen == -1)
+		_listen = "80";
+	if (_listen == "8888" && isThereA_host == -1)
+		_host = "0.0.0.0";
+}
 
 /* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
+	defaultPreConfigs();
+	int isThereA_listen = -1, isThereA_host = -1;
+
     std::ifstream file(configFile.c_str());
-	_listen = 8000; /* Default */                                     /* DOUBLE CHECK THIS LATER, THE ACTUAL */
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
         return ;
@@ -205,14 +231,12 @@ void configValues::parseConfig(const std::string& configFile){
 		}
 
         if (key == "listen"){
-            std::string value;
-            iss >> value;
-            _listen = atof(value.c_str());
-			if (_listen <= 0 || _listen > 9999)
-				throw std::out_of_range("Invalid listen value!");
+            iss >> _listen;
+			isThereA_listen = 1;
         }
 		else if (key == "host"){
             iss >> _host;
+			isThereA_host = 1;
         }
 		else if (key == "server_name"){
             iss >> _serverName;
@@ -233,11 +257,12 @@ void configValues::parseConfig(const std::string& configFile){
             iss >> _index;
         }
     }
+	defaultConfigs(isThereA_listen, isThereA_host);
     file.close();
 }
 
 /* Getters */
-double configValues::get_listen() const{
+std::string configValues::get_listen() const{
 	return _listen;}
 
 std::string configValues::get_host() const{

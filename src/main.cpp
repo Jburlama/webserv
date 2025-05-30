@@ -1,9 +1,9 @@
 #include "../includes/webserv.hpp"
 
 void configTesting(configValues test){
-	double lis = test.get_listen();
-	std::cout << "Listen: " << lis << std::endl; //8080
-	std::string str = test.get_host();
+	std::string str = test.get_listen();
+	std::cout << "Listen: " << str << std::endl; //8080
+	str = test.get_host();
 	std::cout << "host: " << str << std::endl; //127.0.0.1
 	str = test.get_serverName();
 	std::cout << "serverName: " << str << std::endl; //localhost
