@@ -15,6 +15,39 @@ void configTesting(configValues test){
 	std::cout << "root: " << str << std::endl; // /var/www/html
 	str = test.get_index();
 	std::cout << "index: " << str << std::endl;
+
+	std::cout << "---------------" << std::endl;
+	std::cout << "LOCATION PART" << std::endl;
+	str = test.get_location_index();
+	std::cout << "_index: " << str << std::endl;
+	str = test.get_location_allow_methods();
+	std::cout << "allow_methods: " << str << std::endl;
+	str = test.get_location_upload_store();
+	std::cout << "upload_store: " << str << std::endl;
+	str = test.get_location_cgi_pass();
+	std::cout << "cgi_pass: " << str << std::endl;
+	str = test.get_location_cgi_path();
+	std::cout << "cgi_path: " << str << std::endl;
+	str = test.get_location_cgi_ext();
+	std::cout << "cgi_ext: " << str << std::endl;
+	str = test.get_location_root();
+	std::cout << "root: " << str << std::endl;
+	bool _bool = false;
+	_bool = test.get_location_autoindex();
+	std::cout << "autoIndex: " << _bool << std::endl;
+	
+/*
+		else if (key == "location_autoindex") {
+    		std::string value;
+    		iss >> value;
+
+    		if (value == "on")
+    		    _location_autoindex = true;
+    		else if (value == "off")
+    		    _location_autoindex = false;
+    		else
+    		    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
+		} */
 }
 
 int main (int argc, char *argv[])

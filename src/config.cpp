@@ -7,9 +7,100 @@ configValues::configValues(std::string &configFile){
 
 configValues::~configValues(){}
 
-void parseLocatePart(std::ifstream file, std::string line){
+void configValues::parseLocatePart(std::ifstream &file, std::string &line, const std::string firstLine){
 	/* Create a loop that will give this function the line I need */
+	bool insideLocationBlock = false;
+
+	/* Detect start of location block: */
+	if (firstLine.find("location") == 0 && firstLine.find("{") != std::string::npos){
+		std::cout << "Inside if: " << firstLine << std::endl;
+		std::istringstream iss(firstLine);
+		std::string first, second, third;
+		iss >> first >> second >> third;
+		(void)second;
+
+		if (first == "location" && third == "{"){
+			if (insideLocationBlock == false)
+				insideLocationBlock = true;
+				//continue;
+			else {throw std::out_of_range("Can't have a location{} inside another location!");}
+		}
+		else{
+			throw std::runtime_error("Invalid syntax: unexpected token(s) after 'location'");
+		}
+
+	}
+
+	while (std::getline(file, line) && insideLocationBlock == true){
+        /* Remove leading/trailing whitespace */
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
+		std::cout << "Inside loop: " << line  << "\nInside? " << insideLocationBlock << std::endl;
+
+        /* Skip empty lines and comments */
+        if (line.empty() || line[0] == '#')
+			continue;
+
+		if (line == "}"){
+            insideLocationBlock = false;
+            break; //Stop parsing after first server block
+        }
+
+		std::istringstream iss(line); //splits a line into words/tokens
+        std::string key;
+        iss >> key;
+
+        if (key == "index"){
+    		iss >> _location_index;
+		}
+		else if (key == "allow_methods"){
+    		while (iss >> key){
+    		    if (!_location_allow_methods.empty())
+    		        _location_allow_methods += " ";
+    		    _location_allow_methods += key;
+    		}
+		}
+		else if (key == "upload_store"){
+		    iss >> _location_upload_store;
+		}
+		else if (key == "cgi_pass"){
+			while (iss >> key){
+    		    if (!_location_cgi_pass.empty())
+    		        _location_cgi_pass += " ";
+    		    _location_cgi_pass += key;
+    		}
+		}
+		else if (key == "cgi_path"){
+			while (iss >> key){
+    		    if (!_location_cgi_path.empty())
+    		        _location_cgi_path += " ";
+    		    _location_cgi_path += key;
+    		}
+		}
+		else if (key == "cgi_ext"){
+			while (iss >> key){
+    		    if (!_location_cgi_ext.empty())
+    		        _location_cgi_ext += " ";
+    		    _location_cgi_ext += key;
+    		}
+		}
+		else if (key == "root"){
+		    iss >> _location_root;
+		}
+		else if (key == "autoindex"){
+    		std::string value;
+    		iss >> value;
+    		if (value == "on;")
+    		    _location_autoindex = true;
+    		else if (value == "off;")
+    		    _location_autoindex = false;
+    		else
+    		    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
+		}
+	}
 }
+
+
 
 /* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
@@ -45,8 +136,10 @@ void configValues::parseConfig(const std::string& configFile){
 			(void)third;
 
 			if (first == "server" && second == "{"){
-				insideServerBlock = true;
-				//continue;
+				if (insideServerBlock == false)
+					insideServerBlock = true;
+					//continue;
+				else {throw std::out_of_range("Can't have a server{} inside another server!");}
 			}
 			else{
 				throw std::runtime_error("Invalid syntax: unexpected token(s) after 'server'");
@@ -62,9 +155,12 @@ void configValues::parseConfig(const std::string& configFile){
         		nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
 
 				if (nextLine == "{" || nextLine == " " || nextLine == "\n" || nextLine == "\t"){
-        			if (nextLine == "{") {
-        			    insideServerBlock = true;
-						break;
+        			if (nextLine == "{"){
+						if (insideServerBlock == false){
+        			    	insideServerBlock = true;
+							break;
+						}
+						else {throw std::out_of_range("Can't have a server{} inside another server!");}
         			}
 				}
 				else{
@@ -82,13 +178,19 @@ void configValues::parseConfig(const std::string& configFile){
         if (!insideServerBlock)
 			continue;
 
-        /* Remove trailing semicolon(;) */
+        /* Remove trailing semicolon(;) */                                /* Change later because I can have multiple elements in the same line */ 
         if (!line.empty() && line[line.length() - 1] == ';')
    			line.erase(line.length() - 1);
 
         std::istringstream iss(line); //splits a line into words/tokens
         std::string key;
         iss >> key;
+
+		if (key == "location")
+		{
+			const std::string locationLine = line;
+			parseLocatePart(file, line, locationLine);
+		}
 
         if (key == "listen"){
             std::string value;
@@ -141,3 +243,12 @@ std::string configValues::get_root() const{
 
 std::string configValues::get_index() const{
 	return _index;}
+
+std::string configValues::get_location_index() const{return _location_index;}
+std::string configValues::get_location_allow_methods() const {return _location_allow_methods;}
+std::string configValues::get_location_upload_store() const {return _location_upload_store;}
+std::string configValues::get_location_cgi_pass() const{return _location_cgi_pass;}
+std::string configValues::get_location_cgi_path() const{return _location_cgi_path;}
+std::string configValues::get_location_cgi_ext() const{return _location_cgi_ext;}
+std::string configValues::get_location_root() const{return _location_root;}
+bool configValues::get_location_autoindex() const{return _location_autoindex;}

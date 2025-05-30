@@ -16,10 +16,19 @@ class configValues{
 		std::string _root;
 		std::string _index; //hello.html
 
+    std::string _location_index;
+    std::string _location_allow_methods;
+    std::string _location_upload_store;
+    std::string _location_cgi_pass;
+    std::string _location_cgi_path;
+    std::string _location_cgi_ext;
+    std::string _location_root;
+    bool _location_autoindex;
+
 		//std::vector<int> _serverFD; //_listen
 
 		void parseConfig(const std::string& configFile);
-		void parseLocatePart();
+		void parseLocatePart(std::ifstream &file, std::string &line, std::string locationLine);
 
 	public:
 		configValues(std::string &configFile);
@@ -32,6 +41,15 @@ class configValues{
 		std::string get_clientMaxBodySize() const;
 		std::string get_root() const;
 		std::string get_index() const;
+
+    std::string get_location_index() const;
+    std::string get_location_allow_methods() const;
+    std::string get_location_upload_store() const;
+    std::string get_location_cgi_pass() const;
+    std::string get_location_cgi_path() const;
+    std::string get_location_cgi_ext() const;
+    std::string get_location_root() const;
+    bool get_location_autoindex() const;
 
 };
 
@@ -66,4 +84,3 @@ server {
       cgi_ext .py .sh;                                         # extensions for executable files, mandatory parameter
   }
 } */
-
