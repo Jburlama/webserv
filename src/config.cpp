@@ -163,53 +163,69 @@ void configValues::parseConfig(const std::string& configFile){
 			continue;
 
         /* Detect start of server block */
-        if (line == "server{"){
-			if (insideServerBlock == false)
-            	insideServerBlock = true;
-            else {throw std::out_of_range("Can't have a server{} inside another server!");}
-        }	
-		/* Detect start of server block: if "{" is in the same line */
-		else if (line.find("server") == 0 && line.find("{") != std::string::npos){
-			std::istringstream iss(line);
-			std::string first, second;
-			iss >> first >> second;
+		if (line.find("server") == 0 && line.find("{") != std::string::npos){
+			std::string beforeBrace = line.substr(0, line.find("{"));
+			std::string afterBrace = line.substr(line.find("{") + 1);
 
-			if (first == "server" && second == "{"){
-				if (insideServerBlock == false)
+			// Trim spaces before and after '{'
+			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
+
+			// Confirm that it's just "server {"
+			if (beforeBrace == "server"){
+				if (!insideServerBlock){
 					insideServerBlock = true;
-				else {throw std::out_of_range("Can't have a server{} inside another server!");}
+				
+					if (!afterBrace.empty())
+						line = afterBrace;
+					else
+						continue;
+				} 
+				else {
+					std::cout << "Can't have a server{} inside another server!" << std::endl;
+					throw std::exception();
+				}
 			}
-			else{
-				std::cout << "Invalid text between server and '{': " << line << std::endl;
-				throw std::runtime_error("Invalid syntax: unexpected token(s) after 'server'");
+			else {
+				std::cout << "Invalid content before '{' in server declaration: " << line << std::endl;
+				throw std::exception();
 			}
 		}
-
 		else if (line.find("server") == 0 && line.find("server_name") != 0){
 			std::istringstream iss(line);
-    		std::string keyword, invalid;
-    		iss >> keyword >> invalid;
+			std::string keyword, invalid;
+			iss >> keyword >> invalid;
 
-			if (!invalid.empty()){
+			// Check if line is only "server" with optional whitespace
+			if (!invalid.empty()) {
 				std::cout << "Invalid text after server's keyword/s: " << line << std::endl;
 				throw std::exception();
 			}
-
-   			/* Look ahead to see if next line is '{' */
+		
+			// Look ahead for '{'
 			std::string nextLine;
 			while (std::getline(file, nextLine)) {
-
-        		/* Trim whitespace from nextLine */
-        		nextLine.erase(0, nextLine.find_first_not_of(" \t"));
-        		nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
-
-				/* Skip empty lines */
+				nextLine.erase(0, nextLine.find_first_not_of(" \t"));
+				nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
+			
 				if (nextLine.empty())
 					continue;
-
-        		if (nextLine[0] == '{'){
-					if (insideServerBlock == false){
-        				insideServerBlock = true;
+			
+				if (nextLine[0] == '{') {
+					if (!insideServerBlock) {
+						insideServerBlock = true;
+					
+						/* Check if there's anything else after '{' */
+						std::string restOfLine = nextLine.substr(1);
+						restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
+						restOfLine.erase(restOfLine.find_last_not_of(" \t") + 1);
+					
+						if (!restOfLine.empty()) {
+							line = restOfLine;
+						} else {
+							line.clear();
+						}
 						break;
 					}
 					else {
@@ -217,11 +233,12 @@ void configValues::parseConfig(const std::string& configFile){
 						throw std::exception();
 					}
 				}
-				/* Found anything else? */
 				throw std::exception();
-  			}
-			
+			}
+		
+			if (line.empty()) continue; // nothing left to parse after opening block
 		}
+
 
         /* Detect end of server block */
         if (line == "}"){
@@ -252,8 +269,7 @@ void configValues::parseConfig(const std::string& configFile){
 			const std::string locationLine = line;
 			parseLocatePart(file, line, locationLine);
 		}
-
-        if (key == "listen"){
+        else if (key == "listen"){
             iss >> _listen;
 			isThereA_listen = 1;
 		}
@@ -289,6 +305,10 @@ void configValues::parseConfig(const std::string& configFile){
     		    _index += key;
     		}
         }
+		else{
+			std::cout << "Invalid argument within a server block: " << line << std::endl;
+			throw std::exception();
+		}
     }
 	defaultConfigs(isThereA_listen, isThereA_host);
 	if (insideServerBlock == 1){
