@@ -20,27 +20,26 @@ enum e_state {
 class HttpRequest
 {
     private:
-        std::string                                         _str;
         std::string                                         _method;
         std::string                                         _path;
         std::string                                         _version;
         std::map<std::string, std::vector<std::string> >    _headers;
-        std::string                                         _body;
+        std::vector<char>                                   _body;
 
-        std::string                                         _parse_method(int &i, char *str);
-        std::string                                         _parse_path(int &i, char *str);
-        std::string                                         _parse_version(int &i, char *str);
-        std::map<std::string, std::vector<std::string> >    _parse_header(int &i, char *str);
-        std::string                                         _parse_body(int &i, char *str);
+        std::string                                         _parse_method(int &i, const char *str);
+        std::string                                         _parse_path(int &i, const char *str);
+        std::string                                         _parse_version(int &i, const char *str);
+        std::map<std::string, std::vector<std::string> >    _parse_header(int &i, const char *str);
+        std::string                                         _parse_body(int &i, const char *str);
 
     public:
         HttpRequest();
-        HttpRequest(char *str);
-        std::string                                         get_method();
-        std::string                                         get_path();
-        std::string                                         get_version();
-        std::map<std::string, std::vector<std::string> >    get_headers();
-        std::string                                         get_body();
+        HttpRequest(const std::vector<char> &data);
+        std::string                                         get_method() {return this->_method;};
+        std::string                                         get_path() {return this->_path;};
+        std::string                                         get_version() {return this->_version;};
+        std::map<std::string, std::vector<std::string> >    get_headers() {return this->_headers;};
+        std::vector<char>                                   get_body() {return this->_body;};
 };
 
 std::ostream &operator<<(std::ostream &os, HttpRequest &request);

@@ -9,7 +9,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <stdexcept>
+#include <map>
 
 #include "Core.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
+#include "Client.hpp"

@@ -10,9 +10,9 @@ int main (int argc, char *argv[])
     ports.insert(ports.end(), 8001);
 	try
 	{
-        Core server(ports);
+        Core core(ports);
 
-        server.client_multiplex();
+        core.client_multiplex();
 	}
 	catch (std::runtime_error &e)
 	{

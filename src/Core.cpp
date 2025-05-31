@@ -5,120 +5,183 @@ Core::Core()
     throw std::logic_error("Provid port to listen on: Core(int port)");
 }
 
-// Create a socket for the server to listen on
-// Configure the IP address
-// Declare that the socket is ready to listen
+// Inicialize the servers by adding to the servers map
+// Each server is accessible by its file descriptor
 Core::Core(std::vector<int> ports)
-{
-    Listen  listen_on;
-    int     yes;
-
-    yes = 1;
+:_timeout(75) // Connetion timeout 75 seconds
+{   
+    FD_ZERO(&this->_read_set);
+    FD_ZERO(&this->_write_set);
     for (std::vector<int>::iterator it = ports.begin(); it != ports.end(); ++it)
     {
-        listen_on.addr.sin_family = AF_INET;
-        listen_on.addr.sin_port = htons(*it);
-        listen_on.addr.sin_addr.s_addr = INADDR_ANY;
+        Server server(*it);
 
-        listen_on.serverfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (setsockopt(listen_on.serverfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) // Re-use socket if is already in use
-            throw std::runtime_error("Core.cpp:21\n");
-        if (bind(listen_on.serverfd, (const struct sockaddr *)&listen_on.addr, sizeof(listen_on.addr)) != 0)
-            throw std::runtime_error("Core.cpp:23\n");
-        if (listen(listen_on.serverfd, SOMAXCONN) != 0)
-            throw std::runtime_error("Core.cpp:25\n");
-        this->_listen.insert(this->_listen.end(), listen_on);
+        this->_servers.insert(std::make_pair(server.get_fd(), server));
+        FD_SET(server.get_fd(), &this->_read_set); // Add server fd to the read set
     }
 }
 
-Core::~Core()
-{
-    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
-        close(it->serverfd);
-}
 
-// Wait for a client to send a request
-int Core::get_client(int server_fd)
+// Accepts client connection to the given server
+void Core::get_client(int server_fd)
 {
-    int         client_socket;
-    socklen_t   addr_len;
+    socklen_t                       addr_len;
+    int                             client_fd;
+    std::map<int, Server>::iterator serv_it;
 
     addr_len = sizeof(struct sockaddr_in);
-    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+    serv_it = this->_servers.find(server_fd);
+    if (serv_it != this->_servers.end())
     {
-        if (it->serverfd == server_fd)
-            client_socket = accept(server_fd, (struct sockaddr *)&it->addr, &addr_len);
+        client_fd = accept(server_fd, (struct sockaddr *)&(serv_it->second.get_addr()), &addr_len);
+        if (client_fd == -1)
+        	throw std::runtime_error("Core.cpp:40\n");
+        else if (client_fd >= 0)
+        {
+            this->_clients.insert(std::make_pair(client_fd, Client(client_fd)));
+            FD_SET(client_fd, &this->_read_set); // add the client to read set
+        }
     }
-    if (client_socket == -1)
-    	throw std::runtime_error("Core.cpp:line:41\n");
-    return client_socket;
 }
 
-bool Core::is_server_fd(int fd)
+void Core::handle_read(int client_fd)
 {
-    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
+    char buffer[4096];
+    ssize_t bytes;
+
+    bytes = recv(client_fd, buffer, sizeof(buffer), 0);
+    if (bytes > 0)
     {
-        if (it->serverfd == fd)
-            return true;
-    }
-    return false;
+        Client &client = this->_clients[client_fd];
+        std::vector<char> &read_buf = client.get_read_buffer();
+
+        read_buf.insert(read_buf.end(), buffer, buffer + bytes);
+        client.set_last_activity();
+
+        try
+        {
+            // Try to parse the request
+            HttpRequest request(read_buf);
+            
+            // Request is complete, create response
+            HttpResponse response(request);
+            
+            // Store response in client
+            client.get_write_buffer() = response.set_body_from_file("content/html/index.html");
+            client.set_response_ready(true);
+            
+            // Switch to write mode
+            FD_CLR(client_fd, &_read_set);
+            FD_SET(client_fd, &_write_set);
+        }
+        catch (const std::exception& e) {
+            // Parsing failed (incomplete request)
+            // Wait for more data
+        }
+    } 
+    else if (bytes <= 0)
+        close_client(client_fd);
 }
+
+void Core::handle_write(int client_fd)
+{
+    Client              &client     = this->_clients[client_fd];
+    std::vector<char>   &write_buf  = client.get_write_buffer();
+    size_t              &offset     = client.get_write_offset();
+    ssize_t             bytes;
+
+    bytes = send(client_fd, &write_buf[offset], write_buf.size() - offset, 0);
+
+    if (bytes > 0)
+    {
+        offset += bytes;
+        client.set_last_activity();
+
+        if (offset >= write_buf.size())
+        {
+            // Request/response cycle complete
+            if (/* keep-alive requested */)
+            {
+                // Reset client for new request
+                client.get_read_buffer().clear();
+                client.get_response_data().clear();
+                client.set_response_ready(false);
+                offset = 0;
+                FD_CLR(client_fd, &_write_set);
+                FD_SET(client_fd, &_read_set);
+            }
+            else
+                close_client(client_fd);
+        }
+    } 
+    else if (bytes <= 0)
+        close_client(client_fd);
+}
+
+void Core::close_client(int fd)
+{
+    close(fd);
+    FD_CLR(fd, &this->_read_set);
+    FD_CLR(fd, &this->_write_set);
+    this->_clients.erase(fd);
+}
+
+
+// Check the last activity from the client and close the connection if a timeout has exceeded
+void Core::check_timeouts()
+{
+    time_t              now;
+    std::vector<int>    to_remove;
+    
+    now = time(0);
+    for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
+    {
+        if (now - it->second.get_last_activity() > this->_timeout)
+            to_remove.push_back(it->first);
+    }
+
+    for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it)
+        close_client(*it);
+}
+
 
 // Handle multiple clients
 void Core::client_multiplex()
 {
-    fd_set  copy_socket_set;
-    int     client_socket;
-    FD_ZERO(&this->_socket_set);
-    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
-        FD_SET(it->serverfd, &this->_socket_set);
+    fd_set          read_ready;
+    fd_set          write_ready;
+    struct timeval  tv;
+    int             ready;
+
+    tv = {1, 0}; // 1 sec timeout, so that select doesn't block
     
     while (42)
     {
-        // because select is destructive
-        copy_socket_set = this->_socket_set;
+        // because select is destructive and will change the set
+        read_ready  = this->_read_set;
+        write_ready = this->_write_set;
+        
+        ready = select(FD_SETSIZE, &read_ready, &write_ready, NULL, &tv);
+        if (ready < 0)
+            throw std::runtime_error("Core.cpp:154\n");
 
-        if (select(FD_SETSIZE, &copy_socket_set, NULL, NULL, NULL) < 0)
-		    throw std::runtime_error("Core.cpp:65\n");
-
-        for (int i = 0; i < FD_SETSIZE; ++i)
+        // Check servers
+        for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
         {
-            if (FD_ISSET(i, &copy_socket_set)) // checking if fd is ready for reading
-            {
-                if (is_server_fd(i))
-                {
-                    // this is a new connection
-                    client_socket = this->get_client(i);
-                    FD_SET(client_socket, &this->_socket_set); // add the client to set
-                }
-                else
-                {
-                    this->handle_message(i);
-                    FD_CLR(i, &this->_socket_set); // rm from set
-                }
-            }
+            if (FD_ISSET(it->first, &read_ready)) // Check if fd is still present in the set
+                this->get_client(it->first); // Accept a client for the server
         }
+
+        // Check clients
+        for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
+        {
+            int fd = it->first;
+            if (FD_ISSET(fd, &read_ready)) // Check if client is in read set
+                this->handle_read(fd);
+            else if (FD_ISSET(fd, &write_ready)) // Check if client is in write set
+                this->handle_write(fd);
+        }
+        // Close a client connection if timeout as exceeded
+        this->check_timeouts();
     }
-    for (std::vector<Listen>::iterator it = this->_listen.begin(); it != this->_listen.end(); ++it)
-        FD_CLR(it->serverfd, &this->_socket_set);
-}
-
-// send a response
-// Recives the request from the client and prints to stdout
-// send back a response with the client request
-void Core::handle_message(int clientfd)
-{
-    char            buffer[10240];
-    std::string     request_method;
-
-    memset(buffer, 0, sizeof(buffer));
-
-    if (recv(clientfd, buffer, sizeof(buffer) - 1, 0) == -1) // Request
-    	throw std::runtime_error("Core.cpp:line:116\n");
-
-    HttpRequest http_request(buffer);
-    HttpResponse http_response(http_request, clientfd);
-
-    close(clientfd); // close client socket fd
-    std::cout << "\nResponse Sended\n\n";
 }

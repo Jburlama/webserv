@@ -11,11 +11,11 @@ HttpRequest::HttpRequest()
     throw std::logic_error("Provid Request string");
 }
 
-HttpRequest::HttpRequest(char *str)
+HttpRequest::HttpRequest(const std::vector<char> &data)
 {
     int state = START;
 
-    this->_str = str;
+    const char *str = &data[0];
 
     for (int i = 0; str[i]; ++i)
     {
@@ -47,7 +47,10 @@ HttpRequest::HttpRequest(char *str)
                 state = BODY;
                 break ;
             case BODY:
-                this->_body = this->_parse_body(--i, str);
+                size_t body_start;
+                
+                body_start = --i;
+                this->_body.assign(data.begin() + body_start, data.end());
                 state = END;
             case END:
                 return ;
@@ -57,12 +60,7 @@ HttpRequest::HttpRequest(char *str)
     }
 }
 
-std::string HttpRequest::_parse_body(int &i, char *str)
-{
-    return str + i;
-}
-
-std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int &i, char *str)
+std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int &i, const char *str)
 {
     std::map<std::string, std::vector<std::string> > headers;
     std::string name;
@@ -108,7 +106,7 @@ std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int 
     return headers;
 }
 
-std::string HttpRequest::_parse_version(int &i, char *str)
+std::string HttpRequest::_parse_version(int &i, const char *str)
 {
     std::string version_start = "HTTP/";
     std::string version;
@@ -148,7 +146,7 @@ std::string HttpRequest::_parse_version(int &i, char *str)
     }
 }
 
-std::string HttpRequest::_parse_path(int &i, char *str)
+std::string HttpRequest::_parse_path(int &i, const char *str)
 {
     std::string path;
     if (std::isspace(str[i]))
@@ -159,7 +157,7 @@ std::string HttpRequest::_parse_path(int &i, char *str)
     return path;
 }
 
-std::string HttpRequest::_parse_method(int &i, char *str)
+std::string HttpRequest::_parse_method(int &i, const char *str)
 {
     int j = 0;
 
@@ -184,36 +182,10 @@ std::string HttpRequest::_parse_method(int &i, char *str)
     return NULL;
 }
 
-std::string HttpRequest::get_method()
-{
-    return this->_method;
-}
-
-std::string HttpRequest::get_path()
-{
-    return this->_path;
-}
-
-std::string HttpRequest::get_version()
-{
-    return this->_version;
-}
-
-std::map<std::string, std::vector<std::string> > HttpRequest::get_headers()
-{
-    return this->_headers;
-}
-
-std::string HttpRequest::get_body()
-{
-    return this->_body;
-}
-
 std::ostream &operator<<(std::ostream &os, HttpRequest &request)
 {
     os << "Method: " << request.get_method() << "\n";
     os << "URI Path: " << request.get_path() << "\n";
     os << "HTTP version: " << request.get_version() << "\n";
-    os << "Body: " << request.get_body() << "\n";
     return os;
 }

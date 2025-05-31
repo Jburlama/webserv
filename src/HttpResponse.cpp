@@ -1,10 +1,6 @@
 #include "../includes/HttpResponse.hpp"
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <vector>
 
-HttpResponse::HttpResponse(HttpRequest &request, int clientfd)
+HttpResponse::HttpResponse(HttpRequest &request)
 {
     std::map<std::string, std::vector<std::string> > headers;
     headers = request.get_headers();
@@ -19,174 +15,58 @@ HttpResponse::HttpResponse(HttpRequest &request, int clientfd)
         this->set_status_code(200);
         if (this->get_status_code() == 200)
         {
-            this->set_body("content/html/index.html");
-            this->set_str();
+            this->set_header();
+            this->set_body_from_file("content/html/index.html");
         }
         else if (this->get_status_code() == 404)
         {
-            this->set_body("html/error_pages/page_not_found.html");
-            this->set_str();
+            this->set_header();
+            this->set_body_from_file("html/error_pages/page_not_found.html");
         }
     }
     else if (request.get_method().compare("POST") == 0)
     {
-        std::string boundary;
-        std::string body;
-        std::vector<char> bin_body;
-        std::string body_header;
-        std::string filename;
-        std::string file_type;
-        size_t filename_pos;
-        size_t body_pos;
-        size_t file_size;
-
-        file_size = std::atoi(headers["Content-Length"][0].c_str());
-
-        std::cout << "Request: " << request << "\n";
-        boundary = headers["Content-Type"][1];
-        boundary = std::strtok((char *)boundary.c_str(), "=");
-        boundary = std::strtok(NULL, "=");
-
-        body = request.get_body();
-        body = body.substr(boundary.length() + 4);
-
-        filename_pos = body.find("Content-Type:", 0);
-        filename_pos += 13; // 13 = sizeof("Content-Type:")
-        while (body.at(++filename_pos) != '/')
-            file_type += body.at(filename_pos);
-
-        if (file_type.compare("text") == 0)
-        {
-            filename_pos = body.find("filename=", 0);
-            filename_pos += 9; // 9 = sizeof("filename=")
-            while (body.at(++filename_pos) != '"')
-                filename += body.at(filename_pos);
-
-            body_pos = body.find("\r\n\r\n", 0);
-            body = body.substr(body_pos + 4);
-
-
-
-            boundary = "--" + boundary + "--\r";
-            body_pos = body.find(boundary);
-            body = body.substr(0, body_pos);
-
-            std::ofstream my_file(filename.c_str());
-
-            if (!my_file.is_open())
-                throw std::runtime_error("Failed to open file\n");
-
-            my_file << body << "\n";
-            my_file.close();
-
-        }
-        else
-        {
-            std::vector<char> boundary_seq = {'\r','\n','-','-'};
-            std::ofstream my_file(filename.c_str());
-
-            boundary_seq.insert(boundary_seq.end(), boundary.begin(), boundary.end());
-
-            std::cout << "Here\n";
-            std::cout << "File size: " << file_size << "\n";
-            for (size_t i = 0; i < file_size - 1; ++i)
-                my_file << request.get_body()[i];
-            my_file.close();
-        }
+        this->set_body(request.get_body());
         this->set_content_type("text/html");
         this->set_status_code(200);
         if (this->get_status_code() == 200)
         {
-            this->set_body("content/html/index.html");
-            this->set_str();
+            this->set_header();
+            this->set_body_from_file("content/html/index.html");
         }
-
     }
-    if (send(clientfd, this->get_str().c_str(), strlen(this->get_str().c_str()) + 1, 0) == -1)
-        throw std::runtime_error("HttpResponse.cpp:line:18\n");
 }
 
-std::string HttpResponse::get_str()
-{
-    return this->_str;
-}
-
-std::string HttpResponse::get_version()
-{
-    return this->_version;
-}
-int HttpResponse::get_status_code()
-{
-    return this->_status_code;
-}
-
-std::string HttpResponse::get_descrition()
-{
-    return this->_description;
-}
-
-std::string HttpResponse::get_date()
-{
-    return this->_date;
-}
-
-size_t HttpResponse::get_content_lenght()
-{
-    return this->_content_length;
-}
-
-std::vector<std::string> HttpResponse::get_content_type()
-{
-    return this->_content_type;
-}
-
-std::string HttpResponse::get_server()
-{
-    return this->_server;
-}
-
-std::string HttpResponse::get_body()
-{
-    return this->_body;
-}
-
-void HttpResponse::set_str()
+void HttpResponse::set_header()
 {
     std::ostringstream stream;
 
-    this->_str = this->_version + " ";
+    this->_header = this->_version + " ";
     switch (this->_status_code)
     {
         case 200:
-            this->_str += "200 " + this->_description + "\r\n";
+            this->_header += "200 " + this->_description + "\r\n";
             break ;
         case 404:
-            this->_str += "404 " + this->_description + "\r\n";
+            this->_header += "404 " + this->_description + "\r\n";
         default:
             break;
     }
     if (!this->_date.empty())
-        this->_str += "Date: " + this->_date + "\r\n";
+        this->_header += "Date: " + this->_date + "\r\n";
     if (!this->_content_type.empty())
     {
         for (std::vector<std::string>::iterator it = this->_content_type.begin(); it != this->_content_type.end(); ++it)
-            this->_str += "Content-Type: " + *it + "\r\n";
+            this->_header += "Content-Type: " + *it + "\r\n";
     }
     if (!this->_server.empty())
-        this->_str += "Server: " + this->_server + "\r\n";
+        this->_header += "Server: " + this->_server + "\r\n";
     if (this->_content_length != 0)
     {
         stream << this->_content_length;
-        this->_str += "Content-Length: " + stream.str() + "\r\n";
+        this->_header += "Content-Length: " + stream.str() + "\r\n";
     }
-    this->_str += "\r\n";
-    if (!this->_body.empty())
-        this->_str += this->_body;
-}
-
-void HttpResponse::set_version(std::string version)
-{
-    this->_version = version;
+    this->_header += "\r\n";
 }
 
 void HttpResponse::set_status_code(int code)
@@ -217,25 +97,24 @@ void HttpResponse::set_date()
     this->_date = date;
 }
 
-void HttpResponse::set_content_type(std::string type)
+
+void HttpResponse::set_body(const std::vector<char> &body)
 {
-    this->_content_type.insert(this->_content_type.end(), type);
+    this->_body = body;
+    this->_content_length = body.size();
 }
 
-void HttpResponse::set_server(std::string name)
+void HttpResponse::set_body_from_file(const std::string &file_path)
 {
-    this->_server = name;
-}
-
-void HttpResponse::set_body(std::string file_path)
-{
-    std::ifstream   file(file_path.c_str());
-    std::string     line;
-
-    if (!file.is_open())
-        throw std::runtime_error("Failed to open file\n");
-    while (std::getline(file, line))
-        this->_body += line + '\n';
+    std::ifstream file(file_path.c_str(), std::ios::binary);
+    if (!file)
+        throw std::runtime_error("HttpResponse:157");
+    
+    file.seekg(0, std::ios::end);
+    this->_content_length = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    this->_body.resize(_content_length);
+    file.read(&this->_body[0], this->_content_length);
     file.close();
-    this->_content_length = strlen(this->_body.c_str());
 }
