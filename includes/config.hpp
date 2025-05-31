@@ -16,27 +16,27 @@ class configValues{
 		std::string _root;
 		std::string _index; //hello.html
 
-    std::string _location_index;
-    std::string _location_allow_methods;
-    std::string _location_upload_store;
-    std::string _location_cgi_pass;
-    std::string _location_cgi_path;
-    std::string _location_cgi_ext;
-    std::string _location_root;
-    bool _location_autoindex;
+    	std::string _location_index;
+    	std::string _location_allow_methods;
+    	std::string _location_upload_store;
+    	std::string _location_cgi_pass;
+    	std::string _location_cgi_path;
+    	std::string _location_cgi_ext;
+    	std::string _location_root;
+    	bool _location_autoindex;
 
 		//std::vector<int> _serverFD; //_listen
 
 		void parseConfig(const std::string& configFile);
 		void parseLocatePart(std::ifstream &file, std::string &line, std::string locationLine);
-    void defaultPreConfigs();
-    void defaultConfigs(int isThereA_listen, int isThereA_host);
+    	void defaultPreConfigs();
+    	void defaultConfigs(int isThereA_listen, int isThereA_host);
 
 	public:
 		configValues(std::string &configFile);
 		~configValues();
 		
-    std::string get_listen() const;
+		std::string get_listen() const;
 		std::string get_host() const;
 		std::string get_serverName() const;
 		std::string get_errorPage() const;

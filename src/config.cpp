@@ -21,13 +21,15 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 		if (first == "location" && third == "{"){
 			if (insideLocationBlock == false)
 				insideLocationBlock = true;
-				//continue;
-			else {throw std::out_of_range("Can't have a location{} inside another location!");}
+			else {
+				std::cout << "Can't have a location{} inside another location!" << line << std::endl;
+				throw std::exception();
+			}
 		}
 		else{
-			throw std::runtime_error("Invalid syntax: unexpected token(s) after 'location'");
+			std::cout << "Invalid syntax: unexpected token(s) after 'location'" << line << std::endl;
+			throw std::exception();
 		}
-
 	}
 
 	while (std::getline(file, line) && insideLocationBlock == true){
@@ -50,6 +52,11 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 
         if (key == "index"){
     		iss >> _location_index;
+			while (iss >> key){
+    		    if (!_location_index.empty())
+    		        _location_index += " ";
+    		    _location_index += key;
+    		}
 		}
 		else if (key == "allow_methods"){
     		while (iss >> key){
@@ -117,6 +124,14 @@ void configValues::defaultPreConfigs(){
     _location_autoindex = false;      	 // off
 }
 
+void checkIfInvalidAfterKeyWord(std::string invalid){
+	if (!invalid.empty())
+	{
+		std::cout << "Invalid argument after keyword" << std::endl;				
+		throw std::exception();;
+	}
+}
+
 void configValues::defaultConfigs(int isThereA_listen, int isThereA_host){
 	if (isThereA_listen == -1)
 		_listen = "80";
@@ -162,10 +177,10 @@ void configValues::parseConfig(const std::string& configFile){
 			if (first == "server" && second == "{"){
 				if (insideServerBlock == false)
 					insideServerBlock = true;
-					//continue;
 				else {throw std::out_of_range("Can't have a server{} inside another server!");}
 			}
 			else{
+				std::cout << "Invalid text between server and '{': " << line << std::endl;
 				throw std::runtime_error("Invalid syntax: unexpected token(s) after 'server'");
 			}
 		}
@@ -175,13 +190,10 @@ void configValues::parseConfig(const std::string& configFile){
     		std::string keyword, invalid;
     		iss >> keyword >> invalid;
 
-			std::cout << keyword << std::endl;
-			std::cout << invalid << std::endl;
-
 			if (!invalid.empty()){
-				throw std::out_of_range("Can't have a server{} inside another server!");
+				std::cout << "Invalid text after server's keyword/s: " << line << std::endl;
+				throw std::exception();
 			}
-
 
    			/* Look ahead to see if next line is '{' */
 			std::string nextLine;
@@ -195,12 +207,15 @@ void configValues::parseConfig(const std::string& configFile){
 				if (nextLine.empty())
 					continue;
 
-        		if (nextLine == "{"){
+        		if (nextLine[0] == '{'){
 					if (insideServerBlock == false){
         				insideServerBlock = true;
 						break;
 					}
-					else {throw std::out_of_range("Can't have a server{} inside another server!");}
+					else {
+						std::cout << "Can't have a server block inside a server block: " << line << std::endl;
+						throw std::exception();
+					}
 				}
 				/* Found anything else? */
 				throw std::exception();
@@ -210,12 +225,20 @@ void configValues::parseConfig(const std::string& configFile){
 
         /* Detect end of server block */
         if (line == "}"){
-            insideServerBlock = false;
-            break; //Stop parsing after first server block                /* Trying to figure out how to save the next server block data */
+			if (insideServerBlock == true){
+            	insideServerBlock = false;
+            	continue ;
+			}
+			else{
+				std::cout << "Invalid '}': " << line << std::endl;
+				throw std::exception();
+			}
         }
-        if (!insideServerBlock)
-			continue;
-
+        if (!insideServerBlock){
+			std::cout << line << std::endl;
+			std::cout << "Invalid text outside server's block!" << std::endl;
+			throw std::exception();
+		}
         /* Remove trailing semicolon(;) */                                /* Change later because I can have multiple elements in the same line */ 
         if (!line.empty() && line[line.length() - 1] == ';')
    			line.erase(line.length() - 1);
@@ -233,19 +256,24 @@ void configValues::parseConfig(const std::string& configFile){
         if (key == "listen"){
             iss >> _listen;
 			isThereA_listen = 1;
-        }
+		}
 		else if (key == "host"){
             iss >> _host;
 			isThereA_host = 1;
         }
 		else if (key == "server_name"){
-            iss >> _serverName;
+			while (iss >> key){
+    		    if (!_serverName.empty())
+    		        _serverName += " ";
+    		    _serverName += key;
+    		}
         }
 		else if (key == "error_page"){
-    		std::string restOfLine;
-    		std::getline(iss, restOfLine); // rest of the line after key
-    		restOfLine.erase(0, restOfLine.find_first_not_of(" \t")); // trim leading spaces
-    		_errorPage = restOfLine;
+			while (iss >> key){
+    		    if (!_errorPage.empty())
+    		        _errorPage += " ";
+    		    _errorPage += key;
+    		}
 		}
 		else if (key == "client_max_body_size"){
             iss >> _clientMaxBodySize;
@@ -255,9 +283,18 @@ void configValues::parseConfig(const std::string& configFile){
         }
 		else if (key == "index"){
             iss >> _index;
+			while (iss >> key){
+    		    if (!_index.empty())
+    		        _index += " ";
+    		    _index += key;
+    		}
         }
     }
 	defaultConfigs(isThereA_listen, isThereA_host);
+	if (insideServerBlock == 1){
+		std::cout << "Server or location close brackets (}) missing" << std::endl;
+		throw std::exception();
+	}
     file.close();
 }
 
