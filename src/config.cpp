@@ -184,7 +184,13 @@ bool configValues::detectServerBlock(std::ifstream& file, std::string& line, boo
 		std::string beforeBrace = line.substr(0, line.find("{"));
 		std::string afterBrace = line.substr(line.find("{") + 1);
 
-		beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+		size_t end = beforeBrace.find_last_not_of(" \t");
+		if (end != std::string::npos)
+		    beforeBrace.erase(end + 1);
+		else
+		    beforeBrace.clear(); // the string is all whitespace
+
+		beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1); //problem is here
 		afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
 		afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
 
@@ -280,28 +286,128 @@ void configValues::parseConfig(const std::string& configFile){
 		}
 
         /* Detect end of server block */
-		if (line[0] == '}'){ 
-			if (insideServerBlock == true){
-		    	insideServerBlock = false;
-			defaultConfigs(_howManyListen, _howManyHost);
-			initializeKeyWordsVariables();
-
-				/* Check if there is anything else after '}' on the same line */
-				std::string rest = line.substr(1);
-				rest.erase(0, rest.find_first_not_of(" \t"));
-				if (!rest.empty())
-					line = rest;  // Re-parse this part as a new line
+		/* if (line.find('}') != std::string::npos){
+			if (insideServerBlock){
+				insideServerBlock = false;
+			
+				// Handle any content before '}' in the same line
+				std::string beforeBrace = line.substr(0, line.find('}'));
+				beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+			
+				if (!beforeBrace.empty()){
+					// Re-parse the part before '}'
+					std::istringstream iss(beforeBrace);
+					std::string key;
+					iss >> key;
+				}
+				defaultConfigs(_howManyListen, _howManyHost);
+				initializeKeyWordsVariables();
+			
+				// Handle anything after '}'
+				std::string afterBrace = line.substr(line.find('}') + 1);
+				afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+				if (!afterBrace.empty()){
+					line = afterBrace; // reprocess it as next config line
+					if (detectServerBlock(file, line, insideServerBlock))
+						if (line.empty())
+							continue;
+				}
 				else
 					continue;
-				if (detectServerBlock(file, line, insideServerBlock))
-					if (line.empty())
-						continue;
 			}
 			else{
-				std::cout << "Invalid '}': " << line << std::endl;
+				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
 				throw std::exception();
 			}
+		} */
+		if (line.find('}') != std::string::npos){
+			if (!insideServerBlock){
+				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
+				throw std::exception();
+			}
+		
+			std::string beforeBrace = line.substr(0, line.find('}'));
+			std::string afterBrace = line.substr(line.find('}') + 1);
+		
+			// Trim both parts
+			beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
+			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
+		
+			// First, parse the config that comes before the closing brace
+			if (!beforeBrace.empty()){
+				std::stringstream ss(beforeBrace);
+				std::string statement;
+			
+				while (std::getline(ss, statement, ';')){
+					statement.erase(0, statement.find_first_not_of(" \t"));
+					statement.erase(statement.find_last_not_of(" \t") + 1);
+					if (statement.empty()) continue;
+				
+					std::istringstream iss(statement);
+					std::string key;
+					iss >> key;
+				
+					if (key == "listen"){
+						iss >> _listen;
+						_howManyListen++;
+					}
+					else if (key == "host"){
+						iss >> _host;
+						_howManyHost++;
+					}
+					else if (key == "server_name"){
+						while (iss >> key){
+							if (!_serverName.empty()) _serverName += " ";
+							_serverName += key;
+						}
+						_howManyServerName++;
+					}
+					else if (key == "error_page"){
+						while (iss >> key){
+							if (!_errorPage.empty()) _errorPage += " ";
+							_errorPage += key;
+						}
+						_howManyErrorMessage++;
+					}
+					else if (key == "client_max_body_size"){
+						iss >> _clientMaxBodySize;
+						_howManyClient++;
+					}
+					else if (key == "root"){
+						iss >> _root;
+						_howManyRoot++;
+					}
+					else if (key == "index"){
+						iss >> _index;
+						while (iss >> key){
+							if (!_index.empty()) _index += " ";
+							_index += key;
+						}
+						_howManyIndex++;
+					}
+					else{
+						std::cerr << "Invalid keyword in server block: " << statement << std::endl;
+						throw std::exception();
+					}
+				}
+			}
+			// Finalize current server block
+			defaultConfigs(_howManyListen, _howManyHost);
+			initializeKeyWordsVariables();
+			insideServerBlock = false;
+
+			// Continue parsing after the }
+			if (!afterBrace.empty()){
+				line = afterBrace; // this will be re-parsed in the next loop iteration
+				continue;
+			}
+			else
+				continue;
 		}
+
+
         if (!insideServerBlock){
 			std::cout << "Invalid text outside server's block: " << line << std::endl;
 			throw std::exception();
@@ -380,6 +486,8 @@ void configValues::parseConfig(const std::string& configFile){
 	}
     file.close();
 }
+
+
 
 /* Getters */
 std::string configValues::get_listen() const{return _listen;}
