@@ -117,25 +117,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 	}
 }
 
-void configValues::defaultPreConfigs(){
-	/* Default configurations */
-	_listen = "80"; 					// Default port
-    _host = "0.0.0.0"; 					// All interfaces
-    _serverName = "";
-    _errorPage = "";
-    _clientMaxBodySize = "1024";
-    _root = "./www";
-    _index = "index.html";
-
-    _location_index = "index.html";
-    _location_allow_methods = "GET";
-    _location_upload_store = "";
-    _location_cgi_pass = "";
-    _location_cgi_path = "";
-    _location_cgi_ext = "";
-    _location_root = "./www";
-    _location_autoindex = false;      	 // off
-
+void configValues::initializeKeyWordsVariables(){
 	/* Initiate values (can't have more than 1 per block) */
 	_howManyListen = 0;
 	_howManyHost = 0;
@@ -155,10 +137,32 @@ void configValues::defaultPreConfigs(){
 	_howManyAutoindex = 0;
 }
 
+void configValues::defaultPreConfigs(){
+	/* Default configurations */
+		_listen = "80"; 					// Default port
+    	_host = "0.0.0.0"; 					// All interfaces
+    	_serverName = "";
+    	_errorPage = "";
+    	_clientMaxBodySize = "1024";
+    	_root = "./www";
+    	_index = "index.html";
+
+    	_location_index = "index.html";
+    	_location_allow_methods = "GET";
+    	_location_upload_store = "";
+    	_location_cgi_pass = "";
+    	_location_cgi_path = "";
+    	_location_cgi_ext = "";
+    	_location_root = "./www";
+    	_location_autoindex = false;      	 // off
+
+		//initializeKeyWordsVariables();
+}
+
 void checkIfInvalidAfterKeyWord(std::string invalid){
 	if (!invalid.empty()){
 		std::cout << "Invalid argument after keyword" << std::endl;				
-		throw std::exception();;
+		throw std::exception();
 	}
 }
 
@@ -171,7 +175,6 @@ void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
 	/* Check if there aren't duplicates */
 	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){
 		std::cerr << "There are duplicates keywords in the configuration file" << std::endl;
-		std::cerr << _howManyListen<< _howManyHost<< _howManyServerName<< _howManyErrorMessage<< _howManyClient<< _howManyRoot<< _howManyIndex<< std::endl;
 		throw std::exception();
 	}
 }
@@ -280,6 +283,8 @@ void configValues::parseConfig(const std::string& configFile){
 		if (line[0] == '}'){ 
 			if (insideServerBlock == true){
 		    	insideServerBlock = false;
+			defaultConfigs(_howManyListen, _howManyHost);
+			initializeKeyWordsVariables();
 
 				/* Check if there is anything else after '}' on the same line */
 				std::string rest = line.substr(1);
@@ -297,71 +302,78 @@ void configValues::parseConfig(const std::string& configFile){
 				throw std::exception();
 			}
 		}
-
         if (!insideServerBlock){
 			std::cout << "Invalid text outside server's block: " << line << std::endl;
 			throw std::exception();
 		}
-        /* Remove trailing semicolon(;) */                                /* Change later because I can have multiple elements in the same line */ 
-        if (!line.empty() && line[line.length() - 1] == ';')
-   			line.erase(line.length() - 1);
+        /* Remove trailing semicolon(;) */
+		std::stringstream ss(line);
+		std::string statement;
 
-        std::istringstream iss(line); //splits a line into words/tokens
-        std::string key;
-        iss >> key;
-
-		if (key == "location")
-		{
-			const std::string locationLine = line;
-			parseLocatePart(file, line, locationLine);
-		}
-        else if (key == "listen"){
-            iss >> _listen;
-			_howManyListen++;
-		}
-		else if (key == "host"){
-            iss >> _host;
-			_howManyHost++;
-        }
-		else if (key == "server_name"){
-			while (iss >> key){
-    		    if (!_serverName.empty())
-    		        _serverName += " ";
-    		    _serverName += key;
-    		}
-			_howManyServerName++;
-        }
-		else if (key == "error_page"){
-			while (iss >> key){
-    		    if (!_errorPage.empty())
-    		        _errorPage += " ";
-    		    _errorPage += key;
-    		}
-			_howManyErrorMessage++;
-		}
-		else if (key == "client_max_body_size"){
-            iss >> _clientMaxBodySize;
-			_howManyClient++;
-        }
-		else if (key == "root"){
-            iss >> _root;
-			_howManyRoot++;
-        }
-		else if (key == "index"){
-            iss >> _index;
-			while (iss >> key){
-    		    if (!_index.empty())
-    		        _index += " ";
-    		    _index += key;
-    		}
-			_howManyIndex++;
-        }
-		else{
-			std::cout << "Invalid argument within a server block: " << line << std::endl;
-			throw std::exception();
+		while (std::getline(ss, statement, ';')){
+		    // Trim whitespace
+		    statement.erase(0, statement.find_first_not_of(" \t"));
+		    statement.erase(statement.find_last_not_of(" \t") + 1);
+		
+		    if (statement.empty())
+		        continue;
+		
+		    std::istringstream iss(statement);
+		    std::string key;
+		    iss >> key;
+		
+		    if (key == "location"){
+		        const std::string locationLine = statement;
+		        parseLocatePart(file, line, locationLine);  // This already handles block
+		        continue;
+		    }
+		    else if (key == "listen"){
+		        iss >> _listen;
+		        _howManyListen++;
+		    }
+		    else if (key == "host"){
+		        iss >> _host;
+		        _howManyHost++;
+		    }
+		    else if (key == "server_name"){
+		        while (iss >> key){
+		            if (!_serverName.empty())
+		                _serverName += " ";
+		            _serverName += key;
+		        }
+		        _howManyServerName++;
+		    }
+		    else if (key == "error_page"){
+		        while (iss >> key){
+		            if (!_errorPage.empty())
+		                _errorPage += " ";
+		            _errorPage += key;
+		        }
+		        _howManyErrorMessage++;
+		    }
+		    else if (key == "client_max_body_size"){
+		        iss >> _clientMaxBodySize;
+		        _howManyClient++;
+		    }
+		    else if (key == "root"){
+		        iss >> _root;
+		        _howManyRoot++;
+		    }
+		    else if (key == "index"){
+		        iss >> _index;
+		        while (iss >> key){
+		            if (!_index.empty())
+		                _index += " ";
+		            _index += key;
+		        }
+		        _howManyIndex++;
+		    }
+		    else{
+		        std::cerr << "Invalid argument within a server block: " << statement << std::endl;
+		        throw std::exception();
+		    }
 		}
     }
-	defaultConfigs(_howManyListen, _howManyHost);
 	if (insideServerBlock == 1){
 		std::cout << "Server or location close brackets (}) missing" << std::endl;
 		throw std::exception();
@@ -379,8 +391,8 @@ std::string configValues::get_root() const{return _root;}
 std::string configValues::get_index() const{return _index;}
 
 std::string configValues::get_location_index() const{return _location_index;}
-std::string configValues::get_location_allow_methods() const {return _location_allow_methods;}
-std::string configValues::get_location_upload_store() const {return _location_upload_store;}
+std::string configValues::get_location_allow_methods() const{return _location_allow_methods;}
+std::string configValues::get_location_upload_store() const{return _location_upload_store;}
 std::string configValues::get_location_cgi_pass() const{return _location_cgi_pass;}
 std::string configValues::get_location_cgi_path() const{return _location_cgi_path;}
 std::string configValues::get_location_cgi_ext() const{return _location_cgi_ext;}
