@@ -21,7 +21,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 		if (first == "location" && third == "{"){
 			if (insideLocationBlock == false)
 				insideLocationBlock = true;
-			else {
+			else{
 				std::cout << "Can't have a location{} inside another location!" << line << std::endl;
 				throw std::exception();
 			}
@@ -57,6 +57,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		        _location_index += " ";
     		    _location_index += key;
     		}
+			_howManyIndex_location++;
 		}
 		else if (key == "allow_methods"){
     		while (iss >> key){
@@ -64,9 +65,11 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		        _location_allow_methods += " ";
     		    _location_allow_methods += key;
     		}
+			_howManyAllow_methods++;
 		}
 		else if (key == "upload_store"){
 		    iss >> _location_upload_store;
+			_howManyUpload_store++;
 		}
 		else if (key == "cgi_pass"){
 			while (iss >> key){
@@ -74,6 +77,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		        _location_cgi_pass += " ";
     		    _location_cgi_pass += key;
     		}
+			_howManyCgi_pass++;
 		}
 		else if (key == "cgi_path"){
 			while (iss >> key){
@@ -81,6 +85,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		        _location_cgi_path += " ";
     		    _location_cgi_path += key;
     		}
+			_howManyCgi_path++;
 		}
 		else if (key == "cgi_ext"){
 			while (iss >> key){
@@ -88,9 +93,11 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		        _location_cgi_ext += " ";
     		    _location_cgi_ext += key;
     		}
+			_howManyCgi_ext++;
 		}
 		else if (key == "root"){
 		    iss >> _location_root;
+			_howManyRoot_location++;
 		}
 		else if (key == "autoindex"){
     		std::string value;
@@ -101,11 +108,17 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
     		    _location_autoindex = false;
     		else
     		    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
+			_howManyAutoindex++;
 		}
+	}
+	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_pass > 1 || _howManyCgi_path > 1 || _howManyCgi_ext > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){
+		std::cerr << "There are duplicates keywords in the configuration file (within a location block)!" << std::endl;
+		throw std::exception();
 	}
 }
 
 void configValues::defaultPreConfigs(){
+	/* Default configurations */
 	_listen = "80"; 					// Default port
     _host = "0.0.0.0"; 					// All interfaces
     _serverName = "";
@@ -122,27 +135,122 @@ void configValues::defaultPreConfigs(){
     _location_cgi_ext = "";
     _location_root = "./www";
     _location_autoindex = false;      	 // off
+
+	/* Initiate values (can't have more than 1 per block) */
+	_howManyListen = 0;
+	_howManyHost = 0;
+	_howManyServerName = 0;
+	_howManyErrorMessage = 0;
+	_howManyClient = 0;
+	_howManyRoot = 0;
+	_howManyIndex = 0;
+
+	_howManyIndex_location = 0;
+	_howManyAllow_methods = 0;
+	_howManyUpload_store = 0;
+	_howManyCgi_pass = 0;
+	_howManyCgi_path = 0;
+	_howManyCgi_ext = 0;
+	_howManyRoot_location = 0;
+	_howManyAutoindex = 0;
 }
 
 void checkIfInvalidAfterKeyWord(std::string invalid){
-	if (!invalid.empty())
-	{
+	if (!invalid.empty()){
 		std::cout << "Invalid argument after keyword" << std::endl;				
 		throw std::exception();;
 	}
 }
 
-void configValues::defaultConfigs(int isThereA_listen, int isThereA_host){
-	if (isThereA_listen == -1)
+void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
+	if (_howManyListen == 0)
 		_listen = "80";
-	if (_listen == "8888" && isThereA_host == -1)
+	if (_listen == "8888" && _howManyHost == 0)
 		_host = "0.0.0.0";
+
+	/* Check if there aren't duplicates */
+	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){
+		std::cerr << "There are duplicates keywords in the configuration file" << std::endl;
+		std::cerr << _howManyListen<< _howManyHost<< _howManyServerName<< _howManyErrorMessage<< _howManyClient<< _howManyRoot<< _howManyIndex<< std::endl;
+		throw std::exception();
+	}
 }
+
+bool configValues::detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock){
+	if (line.find("server") == 0 && line.find("{") != std::string::npos){
+		std::string beforeBrace = line.substr(0, line.find("{"));
+		std::string afterBrace = line.substr(line.find("{") + 1);
+
+		beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+		afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+		afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
+
+		if (beforeBrace == "server"){
+			if (!insideServerBlock){
+				insideServerBlock = true;
+				if (!afterBrace.empty())
+					line = afterBrace;
+				else
+					line.clear();
+				return true;
+			}
+			else{
+				std::cout << "Can't have a server{} inside another server!" << std::endl;
+				throw std::exception();
+			}
+		}
+		else{
+			std::cout << "Invalid content before '{' in server declaration: " << line << std::endl;
+			throw std::exception();
+		}
+	}
+	else if (line.find("server") == 0 && line.find("server_name") != 0){
+		std::istringstream iss(line);
+		std::string keyword, invalid;
+		iss >> keyword >> invalid;
+
+		if (!invalid.empty()){
+			std::cout << "Invalid text after server's keyword/s: " << line << std::endl;
+			throw std::exception();
+		}
+
+		std::string nextLine;
+		while (std::getline(file, nextLine)){
+			nextLine.erase(0, nextLine.find_first_not_of(" \t"));
+			nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
+
+			if (nextLine.empty())
+				continue;
+
+			if (nextLine[0] == '{'){
+				if (!insideServerBlock){
+					insideServerBlock = true;
+
+					std::string restOfLine = nextLine.substr(1);
+					restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
+					restOfLine.erase(restOfLine.find_last_not_of(" \t") + 1);
+
+					if (!restOfLine.empty())
+						line = restOfLine;
+					else
+						line.clear();
+					return true;
+				}
+				else{
+					std::cout << "Can't have a server block inside a server block: " << line << std::endl;
+					throw std::exception();
+				}
+			}
+			throw std::exception();
+		}
+	}
+	return false; // Not a server block
+}
+
 
 /* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
 	defaultPreConfigs();
-	int isThereA_listen = -1, isThereA_host = -1;
 
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
@@ -163,97 +271,35 @@ void configValues::parseConfig(const std::string& configFile){
 			continue;
 
         /* Detect start of server block */
-		if (line.find("server") == 0 && line.find("{") != std::string::npos){
-			std::string beforeBrace = line.substr(0, line.find("{"));
-			std::string afterBrace = line.substr(line.find("{") + 1);
-
-			// Trim spaces before and after '{'
-			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
-			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
-			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
-
-			// Confirm that it's just "server {"
-			if (beforeBrace == "server"){
-				if (!insideServerBlock){
-					insideServerBlock = true;
-				
-					if (!afterBrace.empty())
-						line = afterBrace;
-					else
-						continue;
-				} 
-				else {
-					std::cout << "Can't have a server{} inside another server!" << std::endl;
-					throw std::exception();
-				}
-			}
-			else {
-				std::cout << "Invalid content before '{' in server declaration: " << line << std::endl;
-				throw std::exception();
-			}
+		if (detectServerBlock(file, line, insideServerBlock)){
+			if (line.empty())
+				continue;
 		}
-		else if (line.find("server") == 0 && line.find("server_name") != 0){
-			std::istringstream iss(line);
-			std::string keyword, invalid;
-			iss >> keyword >> invalid;
-
-			// Check if line is only "server" with optional whitespace
-			if (!invalid.empty()) {
-				std::cout << "Invalid text after server's keyword/s: " << line << std::endl;
-				throw std::exception();
-			}
-		
-			// Look ahead for '{'
-			std::string nextLine;
-			while (std::getline(file, nextLine)) {
-				nextLine.erase(0, nextLine.find_first_not_of(" \t"));
-				nextLine.erase(nextLine.find_last_not_of(" \t") + 1);
-			
-				if (nextLine.empty())
-					continue;
-			
-				if (nextLine[0] == '{') {
-					if (!insideServerBlock) {
-						insideServerBlock = true;
-					
-						/* Check if there's anything else after '{' */
-						std::string restOfLine = nextLine.substr(1);
-						restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
-						restOfLine.erase(restOfLine.find_last_not_of(" \t") + 1);
-					
-						if (!restOfLine.empty()) {
-							line = restOfLine;
-						} else {
-							line.clear();
-						}
-						break;
-					}
-					else {
-						std::cout << "Can't have a server block inside a server block: " << line << std::endl;
-						throw std::exception();
-					}
-				}
-				throw std::exception();
-			}
-		
-			if (line.empty()) continue; // nothing left to parse after opening block
-		}
-
 
         /* Detect end of server block */
-        if (line == "}"){
+		if (line[0] == '}'){ 
 			if (insideServerBlock == true){
-            	insideServerBlock = false;
-            	continue ;
+		    	insideServerBlock = false;
+
+				/* Check if there is anything else after '}' on the same line */
+				std::string rest = line.substr(1);
+				rest.erase(0, rest.find_first_not_of(" \t"));
+				if (!rest.empty())
+					line = rest;  // Re-parse this part as a new line
+				else
+					continue;
+				if (detectServerBlock(file, line, insideServerBlock))
+					if (line.empty())
+						continue;
 			}
 			else{
 				std::cout << "Invalid '}': " << line << std::endl;
 				throw std::exception();
 			}
-        }
+		}
+
         if (!insideServerBlock){
-			std::cout << line << std::endl;
-			std::cout << "Invalid text outside server's block!" << std::endl;
+			std::cout << "Invalid text outside server's block: " << line << std::endl;
 			throw std::exception();
 		}
         /* Remove trailing semicolon(;) */                                /* Change later because I can have multiple elements in the same line */ 
@@ -271,11 +317,11 @@ void configValues::parseConfig(const std::string& configFile){
 		}
         else if (key == "listen"){
             iss >> _listen;
-			isThereA_listen = 1;
+			_howManyListen++;
 		}
 		else if (key == "host"){
             iss >> _host;
-			isThereA_host = 1;
+			_howManyHost++;
         }
 		else if (key == "server_name"){
 			while (iss >> key){
@@ -283,6 +329,7 @@ void configValues::parseConfig(const std::string& configFile){
     		        _serverName += " ";
     		    _serverName += key;
     		}
+			_howManyServerName++;
         }
 		else if (key == "error_page"){
 			while (iss >> key){
@@ -290,12 +337,15 @@ void configValues::parseConfig(const std::string& configFile){
     		        _errorPage += " ";
     		    _errorPage += key;
     		}
+			_howManyErrorMessage++;
 		}
 		else if (key == "client_max_body_size"){
             iss >> _clientMaxBodySize;
+			_howManyClient++;
         }
 		else if (key == "root"){
             iss >> _root;
+			_howManyRoot++;
         }
 		else if (key == "index"){
             iss >> _index;
@@ -304,13 +354,14 @@ void configValues::parseConfig(const std::string& configFile){
     		        _index += " ";
     		    _index += key;
     		}
+			_howManyIndex++;
         }
 		else{
 			std::cout << "Invalid argument within a server block: " << line << std::endl;
 			throw std::exception();
 		}
     }
-	defaultConfigs(isThereA_listen, isThereA_host);
+	defaultConfigs(_howManyListen, _howManyHost);
 	if (insideServerBlock == 1){
 		std::cout << "Server or location close brackets (}) missing" << std::endl;
 		throw std::exception();
@@ -319,26 +370,13 @@ void configValues::parseConfig(const std::string& configFile){
 }
 
 /* Getters */
-std::string configValues::get_listen() const{
-	return _listen;}
-
-std::string configValues::get_host() const{
-	return _host;}
-
-std::string configValues::get_serverName() const{
-	return _serverName;}
-
-std::string configValues::get_errorPage() const{
-	return _errorPage;}
-
-std::string configValues::get_clientMaxBodySize() const{
-	return _clientMaxBodySize;}
-
-std::string configValues::get_root() const{
-	return _root;}
-
-std::string configValues::get_index() const{
-	return _index;}
+std::string configValues::get_listen() const{return _listen;}
+std::string configValues::get_host() const{return _host;}
+std::string configValues::get_serverName() const{return _serverName;}
+std::string configValues::get_errorPage() const{return _errorPage;}
+std::string configValues::get_clientMaxBodySize() const{return _clientMaxBodySize;}
+std::string configValues::get_root() const{return _root;}
+std::string configValues::get_index() const{return _index;}
 
 std::string configValues::get_location_index() const{return _location_index;}
 std::string configValues::get_location_allow_methods() const {return _location_allow_methods;}
