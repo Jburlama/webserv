@@ -1,5 +1,27 @@
 #include "../includes/HttpResponse.hpp"
 
+HttpResponse::HttpResponse()
+: _version("HTTP/1.1"), _status_code(200), _description("OK"),
+_content_length(0), _server("webserv")
+{
+    set_date();
+}
+
+HttpResponse &HttpResponse::operator=(HttpResponse &other)
+{
+    this->_header           = other.get_header();
+    this->_version          = other.get_version();
+    this->_status_code      = other.get_status_code();
+    this->_description      = other.get_descrition();
+    this->_date             = other.get_date();
+    this->_content_type     = other.get_content_type();
+    this->_content_length   = other.get_content_lenght();
+    this->_server           = other.get_server();
+    this->_body             = other.get_body();
+
+    return *this;
+}
+
 HttpResponse::HttpResponse(HttpRequest &request)
 {
     std::map<std::string, std::vector<std::string> > headers;
@@ -7,11 +29,12 @@ HttpResponse::HttpResponse(HttpRequest &request)
 
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
+    this->set_connetion("close");
     this->set_date();
     this->_content_length = 0;
+    this->set_content_type("text/html");
     if (request.get_method().compare("GET") == 0)
     {
-        this->set_content_type("text/html");
         this->set_status_code(200);
         if (this->get_status_code() == 200)
         {
@@ -26,10 +49,13 @@ HttpResponse::HttpResponse(HttpRequest &request)
     }
     else if (request.get_method().compare("POST") == 0)
     {
-        this->set_body(request.get_body());
-        this->set_content_type("text/html");
-        this->set_status_code(200);
+        this->set_status_code(201);
         if (this->get_status_code() == 200)
+        {
+            this->set_header();
+            this->set_body_from_file("content/html/index.html");
+        }
+        if (this->get_status_code() == 201)
         {
             this->set_header();
             this->set_body_from_file("content/html/index.html");
@@ -66,6 +92,8 @@ void HttpResponse::set_header()
         stream << this->_content_length;
         this->_header += "Content-Length: " + stream.str() + "\r\n";
     }
+    if (!this->_connetion.empty())
+        this->_header += "Connection: " + this->_connetion + "\r\n";
     this->_header += "\r\n";
 }
 
@@ -76,6 +104,9 @@ void HttpResponse::set_status_code(int code)
     {
         case 200:
             this->_description = "OK";
+            break ;
+        case 201:
+            this->_description = "Created";
             break ;
         case 404:
             this->_description = "Not Found";
@@ -108,13 +139,27 @@ void HttpResponse::set_body_from_file(const std::string &file_path)
 {
     std::ifstream file(file_path.c_str(), std::ios::binary);
     if (!file)
-        throw std::runtime_error("HttpResponse:157");
+        throw std::runtime_error("HttpResponse.cpp:109");
     
     file.seekg(0, std::ios::end);
     this->_content_length = file.tellg();
     file.seekg(0, std::ios::beg);
     
-    this->_body.resize(_content_length);
+    this->_body.resize(this->_content_length);
     file.read(&this->_body[0], this->_content_length);
     file.close();
+}
+
+
+std::ostream &operator<<(std::ostream &os, HttpResponse &response)
+{
+    os << "Status Code: " << response.get_status_code() << "\n";
+    os << "Description: " << response.get_descrition() << "\n";
+    os << "Date: " << response.get_date() << "\n";
+    os << "Content lenght: " << response.get_content_lenght() << "\n";
+    os << "Content type: " << response.get_content_type()[0] << "\n";
+    os << "Connetion: " << response.get_connetion() << "\n";
+    os << "Body: " << std::string(&response.get_body()[0]) << "\n";
+
+    return os;
 }

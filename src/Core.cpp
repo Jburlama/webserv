@@ -1,4 +1,5 @@
 #include "../includes/Core.hpp"
+#include <cstdio>
 
 Core::Core()
 {
@@ -45,38 +46,35 @@ void Core::get_client(int server_fd)
 }
 
 void Core::handle_read(int client_fd)
-{
-    char buffer[4096];
+{                 
+    char    buffer[4000000];
     ssize_t bytes;
 
     bytes = recv(client_fd, buffer, sizeof(buffer), 0);
     if (bytes > 0)
     {
+        std::cout << "Bytes: " << bytes << "\n";
         Client &client = this->_clients[client_fd];
         std::vector<char> &read_buf = client.get_read_buffer();
 
         read_buf.insert(read_buf.end(), buffer, buffer + bytes);
         client.set_last_activity();
-
+        std::cout << std::string(&read_buf[0]);
         try
         {
-            // Try to parse the request
-            HttpRequest request(read_buf);
-            
-            // Request is complete, create response
-            HttpResponse response(request);
-            
-            // Store response in client
-            client.get_write_buffer() = response.set_body_from_file("content/html/index.html");
-            client.set_response_ready(true);
-            
+            HttpRequest     request(read_buf); // Parse Request
+            read_buf.clear();
+            HttpResponse    response(request); // Build Response
+
+            client.set_response(response);
+
             // Switch to write mode
-            FD_CLR(client_fd, &_read_set);
-            FD_SET(client_fd, &_write_set);
+            FD_CLR(client_fd, &this->_read_set); // Remove from read set
+            FD_SET(client_fd, &this->_write_set); // Add to write set
         }
         catch (const std::exception& e) {
-            // Parsing failed (incomplete request)
-            // Wait for more data
+            std::cout << e.what() << "\n";
+            throw std::logic_error("Http request parser fails");
         }
     } 
     else if (bytes <= 0)
@@ -86,36 +84,29 @@ void Core::handle_read(int client_fd)
 void Core::handle_write(int client_fd)
 {
     Client              &client     = this->_clients[client_fd];
-    std::vector<char>   &write_buf  = client.get_write_buffer();
-    size_t              &offset     = client.get_write_offset();
+    HttpResponse        &response   = client.get_response();
     ssize_t             bytes;
 
-    bytes = send(client_fd, &write_buf[offset], write_buf.size() - offset, 0);
-
-    if (bytes > 0)
+    if (client.get_header_sent()) // Sends the header first
     {
-        offset += bytes;
-        client.set_last_activity();
-
-        if (offset >= write_buf.size())
+        bytes = send(client_fd, &response.get_header()[0], response.get_header().length(), 0);
+        client.set_header_sent(false);
+    }
+    else
+    {
+        bytes = send(client_fd, &response.get_body()[0], response.get_body().size(), 0); // sends the body
+        if ((client.get_bytes_sent() + bytes) < response.get_body().size()) // Check if the body was all sent
+            client.set_bytes_sent(client.get_bytes_sent() + bytes);
+        else // Close connection if the body was all sent
         {
-            // Request/response cycle complete
-            if (/* keep-alive requested */)
-            {
-                // Reset client for new request
-                client.get_read_buffer().clear();
-                client.get_response_data().clear();
-                client.set_response_ready(false);
-                offset = 0;
-                FD_CLR(client_fd, &_write_set);
-                FD_SET(client_fd, &_read_set);
-            }
-            else
-                close_client(client_fd);
+            FD_CLR(client_fd, &this->_write_set);
+            close(client_fd);
+            client.set_header_sent(true);
+            response.get_body().clear();
+            client.set_bytes_sent(0);
         }
-    } 
-    else if (bytes <= 0)
-        close_client(client_fd);
+    }
+    client.set_last_activity();
 }
 
 void Core::close_client(int fd)
@@ -150,10 +141,8 @@ void Core::client_multiplex()
 {
     fd_set          read_ready;
     fd_set          write_ready;
-    struct timeval  tv;
+    struct timeval  tv = {1, 0}; // 1 sec timeout, so that select doesn't block;
     int             ready;
-
-    tv = {1, 0}; // 1 sec timeout, so that select doesn't block
     
     while (42)
     {
@@ -176,9 +165,9 @@ void Core::client_multiplex()
         for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
         {
             int fd = it->first;
-            if (FD_ISSET(fd, &read_ready)) // Check if client is in read set
+            if (FD_ISSET(fd, &this->_read_set)) // Check if client is in read set
                 this->handle_read(fd);
-            else if (FD_ISSET(fd, &write_ready)) // Check if client is in write set
+            else if (FD_ISSET(fd, &this->_write_set)) // Check if client is in write set
                 this->handle_write(fd);
         }
         // Close a client connection if timeout as exceeded

@@ -5,8 +5,7 @@ RESET = \033[0m
 NAME = webserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++98
-CFILES = main.cpp Core.cpp HttpRequest.cpp HttpResponse.cpp \
-		Server.cpp
+CFILES = main.cpp Core.cpp HttpRequest.cpp HttpResponse.cpp Server.cpp
 OBJS_DIR = ./objs/
 SRC_DIR = ./src/
 TEST_DIR = ./test/

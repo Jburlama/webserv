@@ -1,4 +1,9 @@
 #include "../includes/HttpRequest.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <stdexcept>
+#include <iostream>
+#include <fstream>
 
 std::string g_methods[] = {
     "GET",
@@ -17,7 +22,7 @@ HttpRequest::HttpRequest(const std::vector<char> &data)
 
     const char *str = &data[0];
 
-    for (int i = 0; str[i]; ++i)
+    for (int i = 0; i < (int)data.size(); ++i)
     {
         switch (state)
         {
@@ -50,13 +55,74 @@ HttpRequest::HttpRequest(const std::vector<char> &data)
                 size_t body_start;
                 
                 body_start = --i;
-                this->_body.assign(data.begin() + body_start, data.end());
+                this->_body.insert(this->_body.end(), data.begin() + body_start, data.end());
+                if (this->_body.size() != 0)
+                    this->_parse_body();
                 state = END;
             case END:
                 return ;
             default:
                 break;
         }
+    }
+}
+
+    // "multipart/form-data";
+//------geckoformboundary4ea4b54d72f9e8748e9fe720d148cfd
+//Content-Disposition: form-data; name="file"; filename="The-Amazing-Power-of-Self-Discipline_-Miyamoto-Musashi.webp"
+//Content-Type: image/webp
+void HttpRequest::_parse_body()
+{
+    std::string content_type;
+    std::string str(&this->_body[0]);
+
+    content_type = this->_headers["Content-Type"][0];
+
+    if (content_type.compare("multipart/form-data") == 0)
+    {
+        std::string boundary;
+        std::string start_boundary;
+        std::string end_boundary;
+        std::string filename;
+        size_t      boundary_poss;
+        size_t      filename_poss;
+        size_t      filename_end;
+        size_t      header_end;
+        size_t      file_start;
+        size_t      file_end;
+
+        boundary = this->_headers["Content-Type"][1].c_str() + 9; // ----geckoformboundary
+        boundary_poss = str.find(boundary);
+        if (boundary_poss == std::string::npos)
+            throw std::logic_error("Multipart boundary not found");
+
+        start_boundary = "--" + boundary + "\r\n";
+        end_boundary = "\r\n--" + boundary + "--";
+
+        filename_poss = str.find("filename=\"");
+        if (filename_poss == std::string::npos)
+            throw std::logic_error("Filename not found in multipart header");
+        filename_poss += 10;  // Move past 'filename="'
+        filename_end = str.find('"', filename_poss);
+        filename = str.substr(filename_poss, filename_end - filename_poss);
+        if (filename.empty())
+            return ;
+
+        header_end = str.find("\r\n\r\n", filename_end);
+        if (header_end == std::string::npos)
+            throw std::logic_error("Multipart header end not found");
+        
+        file_start = header_end + 4;  // Skip \r\n\r\n
+        file_end = std::atoi(this->_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
+        std::cout << "File End: " << file_end << "\n";
+
+        //// Write to file
+        std::ofstream out_file(filename.c_str(), std::ios::binary);
+        if (!out_file)
+            throw std::runtime_error("Failed to create file: " + filename);
+        
+        out_file.write(&this->_body[file_start], file_end);
+        out_file.close();
     }
 }
 

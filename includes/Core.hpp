@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -10,6 +11,7 @@
 #include <utility>
 
 #include "webserv.hpp"
+#include "HttpResponse.hpp"
 #include "Client.hpp"
 #include "Server.hpp"
 
@@ -21,6 +23,7 @@ class Core
         time_t                  _timeout;   // Global timeout in seconds
         fd_set                  _read_set;  // Separate read FD set
         fd_set                  _write_set; // Separate write FD set
+    
     public:
         Core(); // Don't call default
         Core(std::vector<int> ports);
@@ -33,5 +36,4 @@ class Core
         void    close_client(int fd);
         void    check_timeouts();
         void    client_multiplex();
-        void    handle_message(int client_socket);
 };
