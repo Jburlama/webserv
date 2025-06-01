@@ -114,7 +114,6 @@ void HttpRequest::_parse_body()
         
         file_start = header_end + 4;  // Skip \r\n\r\n
         file_end = std::atoi(this->_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
-        std::cout << "File End: " << file_end << "\n";
 
         //// Write to file
         std::ofstream out_file(filename.c_str(), std::ios::binary);

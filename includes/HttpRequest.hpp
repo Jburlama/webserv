@@ -35,6 +35,7 @@ class HttpRequest
     public:
         HttpRequest();
         HttpRequest(const std::vector<char> &data);
+
         std::string                                         get_method() {return this->_method;};
         std::string                                         get_path() {return this->_path;};
         std::string                                         get_version() {return this->_version;};

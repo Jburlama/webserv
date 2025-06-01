@@ -15,7 +15,6 @@ class Client
         int                 _fd;
         time_t              _last_activity;  // Track last I/O activity
         std::vector<char>   _read_buffer;    // Incoming data
-        std::vector<char>   _write_buffer;   // Outgoing data
         bool                _response_ready;
         HttpResponse        _response;
         bool                _header_sent;
@@ -29,7 +28,6 @@ class Client
         int                 get_fd()              const {return this->_fd;};
         time_t              get_last_activity()         {return this->_last_activity;};
         std::vector<char>   &get_read_buffer()          {return this->_read_buffer;};
-        std::vector<char>   &get_write_buffer()         {return this->_write_buffer;};
         HttpResponse        &get_response()             {return this->_response;};
         bool                is_response_ready()         {return this->_response_ready;};
         bool                get_header_sent()           {return this->_header_sent;};

@@ -53,18 +53,20 @@ void Core::handle_read(int client_fd)
     bytes = recv(client_fd, buffer, sizeof(buffer), 0);
     if (bytes > 0)
     {
-        std::cout << "Bytes: " << bytes << "\n";
         Client &client = this->_clients[client_fd];
         std::vector<char> &read_buf = client.get_read_buffer();
 
         read_buf.insert(read_buf.end(), buffer, buffer + bytes);
         client.set_last_activity();
-        std::cout << std::string(&read_buf[0]);
         try
         {
             HttpRequest     request(read_buf); // Parse Request
-            read_buf.clear();
+            std::cout << "[ Request ] \n";
+            std::cout << request << "\n";
             HttpResponse    response(request); // Build Response
+
+            //std::cout << "[ Response ] \n";
+            //std::cout << response << "\n";
 
             client.set_response(response);
 
@@ -87,21 +89,33 @@ void Core::handle_write(int client_fd)
     HttpResponse        &response   = client.get_response();
     ssize_t             bytes;
 
-    if (client.get_header_sent()) // Sends the header first
+    if (client.get_header_sent() == false) // Sends the header first
     {
+        std::cout << "[ Response Header ]\n";
+        std::cout << &response.get_header()[0] << "\n";
         bytes = send(client_fd, &response.get_header()[0], response.get_header().length(), 0);
-        client.set_header_sent(false);
+        if (response.get_body().empty()) // No Body
+        {
+            FD_CLR(client_fd, &this->_write_set);
+            close(client_fd);
+        }
+        else
+            client.set_header_sent(true);
     }
     else
     {
+        std::cout << "[ Response Body ]\n";
+        std::cout << &response.get_body()[0] << "\n";
         bytes = send(client_fd, &response.get_body()[0], response.get_body().size(), 0); // sends the body
         if ((client.get_bytes_sent() + bytes) < response.get_body().size()) // Check if the body was all sent
             client.set_bytes_sent(client.get_bytes_sent() + bytes);
         else // Close connection if the body was all sent
         {
             FD_CLR(client_fd, &this->_write_set);
+            //FD_SET(client_fd, &this->_read_set); // Add to read set
             close(client_fd);
-            client.set_header_sent(true);
+            client.get_read_buffer().clear();
+            client.set_header_sent(false);
             response.get_body().clear();
             client.set_bytes_sent(0);
         }
@@ -141,18 +155,23 @@ void Core::client_multiplex()
 {
     fd_set          read_ready;
     fd_set          write_ready;
-    struct timeval  tv = {1, 0}; // 1 sec timeout, so that select doesn't block;
-    int             ready;
-    
+    struct timeval  tv;
+    int             ready; // Select return the amount of fd is ready
+
+    //  sec timeout, so that select doesn't block;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
     while (42)
     {
-        // because select is destructive and will change the set
+        // Copy because select is destructive and will change the sets
         read_ready  = this->_read_set;
         write_ready = this->_write_set;
         
         ready = select(FD_SETSIZE, &read_ready, &write_ready, NULL, &tv);
         if (ready < 0)
             throw std::runtime_error("Core.cpp:154\n");
+        if (ready == 0) // No fd is ready, timeout has expired
+            continue ;
 
         // Check servers
         for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
@@ -164,11 +183,10 @@ void Core::client_multiplex()
         // Check clients
         for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
         {
-            int fd = it->first;
-            if (FD_ISSET(fd, &this->_read_set)) // Check if client is in read set
-                this->handle_read(fd);
-            else if (FD_ISSET(fd, &this->_write_set)) // Check if client is in write set
-                this->handle_write(fd);
+            if (FD_ISSET(it->first, &this->_read_set)) // Check if client is in read set
+                this->handle_read(it->first); // Call recv()
+            else if (FD_ISSET(it->first, &this->_write_set)) // Check if client is in write set
+                this->handle_write(it->first); // Call send().
         }
         // Close a client connection if timeout as exceeded
         this->check_timeouts();

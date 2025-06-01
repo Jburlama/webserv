@@ -29,7 +29,8 @@ HttpResponse::HttpResponse(HttpRequest &request)
 
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
-    this->set_connetion("close");
+    if (!headers["Connection"].empty())
+        this->set_connetion(headers["Connection"][0]);
     this->set_date();
     this->_content_length = 0;
     this->set_content_type("text/html");
@@ -92,8 +93,7 @@ void HttpResponse::set_header()
         stream << this->_content_length;
         this->_header += "Content-Length: " + stream.str() + "\r\n";
     }
-    if (!this->_connetion.empty())
-        this->_header += "Connection: " + this->_connetion + "\r\n";
+    this->_header += "Connection: " + this->_connetion + "\r\n";
     this->_header += "\r\n";
 }
 
