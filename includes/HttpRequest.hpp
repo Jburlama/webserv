@@ -6,6 +6,7 @@
 
 #define CR '\r'
 #define LF '\n'
+#define CRLF "\r\n"
 
 enum e_state {
     START = 0,
@@ -34,6 +35,7 @@ class HttpRequest
 
     public:
         HttpRequest() {};
+        HttpRequest &operator=(HttpRequest &other);
         HttpRequest(const char *data);
 
         std::string                                         get_method() {return this->_method;};

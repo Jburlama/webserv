@@ -11,6 +11,17 @@ std::string g_methods[] = {
     "DELETE",
 };
 
+
+HttpRequest &HttpRequest::operator=(HttpRequest &other)
+{
+    this->_method = other.get_method();
+    this->_path = other.get_path();
+    this->_version = other.get_version();
+    this->_headers = other.get_headers();
+    this->_body = other.get_body();
+    return *this;
+}
+
 HttpRequest::HttpRequest(const char *data)
 {
     try
