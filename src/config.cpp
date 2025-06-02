@@ -349,7 +349,7 @@ void configValues::parseConfig(const std::string& configFile){
 					std::string key;
 					iss >> key;
 				
-					if (key == "listen"){
+					if (key == "listen"){  //Maybe rewrite a function in this section
 						iss >> _listen;
 						_howManyListen++;
 					}
@@ -401,7 +401,7 @@ void configValues::parseConfig(const std::string& configFile){
 			// Continue parsing after the }
 			if (!afterBrace.empty()){
 				line = afterBrace; // this will be re-parsed in the next loop iteration
-				continue;
+				//continue;
 			}
 			else
 				continue;
