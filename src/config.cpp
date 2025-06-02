@@ -37,9 +37,15 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
 
-        /* Skip empty lines and comments */
-        if (line.empty() || line[0] == '#')
-			continue;
+        // Now skip if empty
+		if (line.empty())
+		    continue;
+
+        /* Detect start of server block */
+		if (detectServerBlock(file, line, insideLocationBlock)){
+			if (line.empty())
+				continue;
+		}
 
 		if (line == "}"){
             insideLocationBlock = false;
@@ -328,7 +334,7 @@ void configValues::parseConfig(const std::string& configFile){
 		size_t commentPos = line.find('#');
 		if (commentPos != std::string::npos)
 		    line = line.substr(0, commentPos);
-			
+
 		line.erase(0, line.find_first_not_of(" \t"));
 		line.erase(line.find_last_not_of(" \t") + 1);
 
@@ -345,6 +351,10 @@ void configValues::parseConfig(const std::string& configFile){
 		if (line.find('}') != std::string::npos){
 			if (!insideServerBlock){
 				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
+				throw std::exception();
+			}
+			if (!line.empty() && line[line.length() - 2] != ';'){
+				std::cerr << "Missing semicolon at the end of: " << line << std::endl;
 				throw std::exception();
 			}
 		
@@ -393,6 +403,10 @@ void configValues::parseConfig(const std::string& configFile){
 
 		while (std::getline(ss, statement, ';')){
 		    // Trim whitespace
+			if (!line.empty() && line[line.length() - 1] != ';'){
+				std::cerr << "Missing semicolon at the end of: " << line << std::endl;
+				throw std::exception();
+			}
 		    statement.erase(0, statement.find_first_not_of(" \t"));
 		    statement.erase(statement.find_last_not_of(" \t") + 1);
 		
