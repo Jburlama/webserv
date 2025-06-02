@@ -179,6 +179,55 @@ void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
 	}
 }
 
+void configValues::isKeyWord(std::string statement){
+	std::istringstream iss(statement);
+	std::string key;
+	iss >> key;
+
+	if (key == "listen"){
+		iss >> _listen;
+		_howManyListen++;
+	}
+	else if (key == "host"){
+		iss >> _host;
+		_howManyHost++;
+	}
+	else if (key == "server_name"){
+		while (iss >> key){
+			if (!_serverName.empty()) _serverName += " ";
+			_serverName += key;
+		}
+		_howManyServerName++;
+	}
+	else if (key == "error_page"){
+		while (iss >> key){
+			if (!_errorPage.empty()) _errorPage += " ";
+			_errorPage += key;
+		}
+		_howManyErrorMessage++;
+	}
+	else if (key == "client_max_body_size"){
+		iss >> _clientMaxBodySize;
+		_howManyClient++;
+	}
+	else if (key == "root"){
+		iss >> _root;
+		_howManyRoot++;
+	}
+	else if (key == "index"){
+		iss >> _index;
+		while (iss >> key){
+			if (!_index.empty()) _index += " ";
+			_index += key;
+		}
+		_howManyIndex++;
+	}
+	else{
+		std::cerr << "Invalid keyword in server block: " << statement << std::endl;
+		throw std::exception();
+	}
+}
+
 bool configValues::detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock){
 	if (line.find("server") == 0 && line.find("{") != std::string::npos){
 		std::string beforeBrace = line.substr(0, line.find("{"));
@@ -345,52 +394,7 @@ void configValues::parseConfig(const std::string& configFile){
 					statement.erase(statement.find_last_not_of(" \t") + 1);
 					if (statement.empty()) continue;
 				
-					std::istringstream iss(statement);
-					std::string key;
-					iss >> key;
-				
-					if (key == "listen"){  //Maybe rewrite a function in this section
-						iss >> _listen;
-						_howManyListen++;
-					}
-					else if (key == "host"){
-						iss >> _host;
-						_howManyHost++;
-					}
-					else if (key == "server_name"){
-						while (iss >> key){
-							if (!_serverName.empty()) _serverName += " ";
-							_serverName += key;
-						}
-						_howManyServerName++;
-					}
-					else if (key == "error_page"){
-						while (iss >> key){
-							if (!_errorPage.empty()) _errorPage += " ";
-							_errorPage += key;
-						}
-						_howManyErrorMessage++;
-					}
-					else if (key == "client_max_body_size"){
-						iss >> _clientMaxBodySize;
-						_howManyClient++;
-					}
-					else if (key == "root"){
-						iss >> _root;
-						_howManyRoot++;
-					}
-					else if (key == "index"){
-						iss >> _index;
-						while (iss >> key){
-							if (!_index.empty()) _index += " ";
-							_index += key;
-						}
-						_howManyIndex++;
-					}
-					else{
-						std::cerr << "Invalid keyword in server block: " << statement << std::endl;
-						throw std::exception();
-					}
+					isKeyWord(statement);
 				}
 			}
 			// Finalize current server block
@@ -428,56 +432,7 @@ void configValues::parseConfig(const std::string& configFile){
 		    std::string key;
 		    iss >> key;
 		
-		    if (key == "location"){
-		        const std::string locationLine = statement;
-		        parseLocatePart(file, line, locationLine);  // This already handles block
-		        continue;
-		    }
-		    else if (key == "listen"){
-		        iss >> _listen;
-		        _howManyListen++;
-		    }
-		    else if (key == "host"){
-		        iss >> _host;
-		        _howManyHost++;
-		    }
-		    else if (key == "server_name"){
-		        while (iss >> key){
-		            if (!_serverName.empty())
-		                _serverName += " ";
-		            _serverName += key;
-		        }
-		        _howManyServerName++;
-		    }
-		    else if (key == "error_page"){
-		        while (iss >> key){
-		            if (!_errorPage.empty())
-		                _errorPage += " ";
-		            _errorPage += key;
-		        }
-		        _howManyErrorMessage++;
-		    }
-		    else if (key == "client_max_body_size"){
-		        iss >> _clientMaxBodySize;
-		        _howManyClient++;
-		    }
-		    else if (key == "root"){
-		        iss >> _root;
-		        _howManyRoot++;
-		    }
-		    else if (key == "index"){
-		        iss >> _index;
-		        while (iss >> key){
-		            if (!_index.empty())
-		                _index += " ";
-		            _index += key;
-		        }
-		        _howManyIndex++;
-		    }
-		    else{
-		        std::cerr << "Invalid argument within a server block: " << statement << std::endl;
-		        throw std::exception();
-		    }
+		    isKeyWord(statement);
 		}
     }
 	if (insideServerBlock == 1){
