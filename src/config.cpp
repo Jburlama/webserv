@@ -325,8 +325,16 @@ void configValues::parseConfig(const std::string& configFile){
         line.erase(line.find_last_not_of(" \t") + 1);
 
         /* Skip empty lines and comments */
-        if (line.empty() || line[0] == '#')
-			continue;
+		size_t commentPos = line.find('#');
+		if (commentPos != std::string::npos)
+		    line = line.substr(0, commentPos);
+			
+		line.erase(0, line.find_first_not_of(" \t"));
+		line.erase(line.find_last_not_of(" \t") + 1);
+
+		// Now skip if empty
+		if (line.empty())
+		    continue;
 
         /* Detect start of server block */
 		if (detectServerBlock(file, line, insideServerBlock)){
@@ -334,41 +342,6 @@ void configValues::parseConfig(const std::string& configFile){
 				continue;
 		}
 
-        /* Detect end of server block */
-		/* if (line.find('}') != std::string::npos){
-			if (insideServerBlock){
-				insideServerBlock = false;
-			
-				// Handle any content before '}' in the same line
-				std::string beforeBrace = line.substr(0, line.find('}'));
-				beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
-			
-				if (!beforeBrace.empty()){
-					// Re-parse the part before '}'
-					std::istringstream iss(beforeBrace);
-					std::string key;
-					iss >> key;
-				}
-				defaultConfigs(_howManyListen, _howManyHost);
-				initializeKeyWordsVariables();
-			
-				// Handle anything after '}'
-				std::string afterBrace = line.substr(line.find('}') + 1);
-				afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
-				if (!afterBrace.empty()){
-					line = afterBrace; // reprocess it as next config line
-					if (detectServerBlock(file, line, insideServerBlock))
-						if (line.empty())
-							continue;
-				}
-				else
-					continue;
-			}
-			else{
-				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
-				throw std::exception();
-			}
-		} */
 		if (line.find('}') != std::string::npos){
 			if (!insideServerBlock){
 				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
@@ -399,14 +372,12 @@ void configValues::parseConfig(const std::string& configFile){
 			}
 			// Finalize current server block
 			defaultConfigs(_howManyListen, _howManyHost);
-			initializeKeyWordsVariables();
+			initializeKeyWordsVariables(); // For new block
 			insideServerBlock = false;
 
 			// Continue parsing after the }
-			if (!afterBrace.empty()){
-				line = afterBrace; // this will be re-parsed in the next loop iteration
-				//continue;
-			}
+			if (!afterBrace.empty())
+				line = afterBrace; // re-parsed
 			else
 				continue;
 		}
