@@ -24,7 +24,7 @@ class HttpRequest
         std::string                                         _path;
         std::string                                         _version;
         std::map<std::string, std::vector<std::string> >    _headers;
-        std::vector<char>                                   _body;
+        const char                                          *_body;
 
         std::string                                         _parse_method(int &i, const char *str);
         std::string                                         _parse_path(int &i, const char *str);
@@ -33,14 +33,14 @@ class HttpRequest
         void                                                _parse_body();
 
     public:
-        HttpRequest();
-        HttpRequest(const std::vector<char> &data);
+        HttpRequest() {};
+        HttpRequest(const char *data);
 
         std::string                                         get_method() {return this->_method;};
         std::string                                         get_path() {return this->_path;};
         std::string                                         get_version() {return this->_version;};
         std::map<std::string, std::vector<std::string> >    get_headers() {return this->_headers;};
-        std::vector<char>                                   get_body() {return this->_body;};
+        const char                                          *get_body() {return this->_body;};
 };
 
 std::ostream &operator<<(std::ostream &os, HttpRequest &request);

@@ -11,59 +11,61 @@ std::string g_methods[] = {
     "DELETE",
 };
 
-HttpRequest::HttpRequest()
+HttpRequest::HttpRequest(const char *data)
 {
-    throw std::logic_error("Provid Request string");
-}
-
-HttpRequest::HttpRequest(const std::vector<char> &data)
-{
-    int state = START;
-
-    const char *str = &data[0];
-
-    for (int i = 0; i < (int)data.size(); ++i)
+    try
     {
-        switch (state)
+        int state = START;
+
+        const char *str = &data[0];
+
+        for (int i = 0; i < 40000; ++i)
         {
-            case START:  // skips empty line, and check if method start at the beguining of the line
-                while (std::isspace(str[i]))
-                    ++i;
-                if ((i == 0 && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D'))
-                || (str[i - 1] == '\n' && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D')))
-                    state = METHOD;
-                else
-                    throw std::logic_error("Error at status line: Method must start at the beguinning of the line");
-                break ;
-            case METHOD:
-                this->_method = this->_parse_method(--i, str);
-                state = PATH;
-                break;
-            case PATH:
-                this->_path = this->_parse_path(i, str);
-                state = VERSION;
-                break ;
-            case VERSION:
-                this->_version = this->_parse_version(i, str);
-                state = HEADER;
-                break ;
-            case HEADER:
-                this->_headers = this->_parse_header(--i, str);
-                state = BODY;
-                break ;
-            case BODY:
-                size_t body_start;
-                
-                body_start = --i;
-                this->_body.insert(this->_body.end(), data.begin() + body_start, data.end());
-                if (this->_body.size() != 0)
-                    this->_parse_body();
-                state = END;
-            case END:
-                return ;
-            default:
-                break;
+            switch (state)
+            {
+                case START:  // skips empty line, and check if method start at the beguining of the line
+                    while (std::isspace(str[i]))
+                        ++i;
+                    if ((i == 0 && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D'))
+                    || (str[i - 1] == '\n' && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D')))
+                        state = METHOD;
+                    else
+                        throw std::logic_error("Error at status line: Method must start at the beguinning of the line");
+                    break ;
+                case METHOD:
+                    this->_method = this->_parse_method(--i, str);
+                    state = PATH;
+                    break;
+                case PATH:
+                    this->_path = this->_parse_path(i, str);
+                    state = VERSION;
+                    break ;
+                case VERSION:
+                    this->_version = this->_parse_version(i, str);
+                    state = HEADER;
+                    break ;
+                case HEADER:
+                    this->_headers = this->_parse_header(--i, str);
+                    state = BODY;
+                    break ;
+                case BODY:
+                    this->_body = data + --i;
+                    // TODO: Parse Body when Client sends a POST
+                    // Have to be able to deal with bynaty data
+                    //if (this->_headers.find("Content-Lenght") != this->_headers.end())
+                    //    this->_parse_body();
+                    state = END;
+                case END:
+                    return ;
+                default:
+                    break;
+            }
         }
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << e.what() << "\n";
+        throw std::logic_error("Http request parser fails");
     }
 }
 

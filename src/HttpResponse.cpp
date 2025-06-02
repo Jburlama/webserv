@@ -18,6 +18,7 @@ HttpResponse &HttpResponse::operator=(HttpResponse &other)
     this->_content_length   = other.get_content_lenght();
     this->_server           = other.get_server();
     this->_body             = other.get_body();
+    this->_connection       = other.get_connection();
 
     return *this;
 }
@@ -29,8 +30,8 @@ HttpResponse::HttpResponse(HttpRequest &request)
 
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
-    if (!headers["Connection"].empty())
-        this->set_connetion(headers["Connection"][0]);
+    if (headers.find("Connection") != headers.end())
+        this->set_connection(headers["Connection"][0]);
     this->set_date();
     this->_content_length = 0;
     this->set_content_type("text/html");
@@ -39,13 +40,13 @@ HttpResponse::HttpResponse(HttpRequest &request)
         this->set_status_code(200);
         if (this->get_status_code() == 200)
         {
-            this->set_header();
             this->set_body_from_file("content/html/index.html");
+            this->set_header();
         }
         else if (this->get_status_code() == 404)
         {
-            this->set_header();
             this->set_body_from_file("html/error_pages/page_not_found.html");
+            this->set_header();
         }
     }
     else if (request.get_method().compare("POST") == 0)
@@ -53,13 +54,13 @@ HttpResponse::HttpResponse(HttpRequest &request)
         this->set_status_code(201);
         if (this->get_status_code() == 200)
         {
-            this->set_header();
             this->set_body_from_file("content/html/index.html");
+            this->set_header();
         }
         if (this->get_status_code() == 201)
         {
-            this->set_header();
             this->set_body_from_file("content/html/index.html");
+            this->set_header();
         }
     }
 }
@@ -93,7 +94,7 @@ void HttpResponse::set_header()
         stream << this->_content_length;
         this->_header += "Content-Length: " + stream.str() + "\r\n";
     }
-    this->_header += "Connection: " + this->_connetion + "\r\n";
+    this->_header += "Connection: " + this->_connection + "\r\n";
     this->_header += "\r\n";
 }
 
@@ -148,6 +149,7 @@ void HttpResponse::set_body_from_file(const std::string &file_path)
     this->_body.resize(this->_content_length);
     file.read(&this->_body[0], this->_content_length);
     file.close();
+    this->_content_length = this->_body.size();
 }
 
 
@@ -158,7 +160,7 @@ std::ostream &operator<<(std::ostream &os, HttpResponse &response)
     os << "Date: " << response.get_date() << "\n";
     os << "Content lenght: " << response.get_content_lenght() << "\n";
     os << "Content type: " << response.get_content_type()[0] << "\n";
-    os << "Connetion: " << response.get_connetion() << "\n";
+    os << "Connection: " << response.get_connection() << "\n";
     os << "Body: " << std::string(&response.get_body()[0]) << "\n";
 
     return os;

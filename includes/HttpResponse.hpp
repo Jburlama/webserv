@@ -24,7 +24,7 @@ class HttpResponse
         std::vector<std::string>                            _content_type; // e.g text/html
         size_t                                              _content_length; // the exact byte count of the body
         std::string                                         _server; // software name (webserv)
-        std::string                                         _connetion;
+        std::string                                         _connection;
         std::vector<char>                                   _body; // page content in binary form
     
     public:
@@ -40,8 +40,8 @@ class HttpResponse
         size_t                                              get_content_lenght()    {return this->_content_length;};
         std::vector<std::string>                            get_content_type()      {return this->_content_type;};
         std::string                                         get_server()            {return this->_server;};
-        std::string                                         get_connetion()         {return this->_connetion;};
-        std::vector<char>                                   get_body()              {return this->_body;};
+        std::string                                         get_connection()        {return this->_connection;};
+        std::vector<char>                                   &get_body()             {return this->_body;};
 
         void set_header();
         void set_status_code(int code);
@@ -49,9 +49,10 @@ class HttpResponse
         void set_body_from_file(const std::string &file_path);
         void set_body(const std::vector<char> &body);
         void set_version(std::string version)       {this->_version = version;};
-        void set_connetion(std::string connetion)   {this->_connetion = connetion;};
+        void set_connection(std::string connection) {this->_connection = connection;};
         void set_content_type(std::string type)     {this->_content_type.insert(this->_content_type.end(), type);};
         void set_server(std::string name)           {this->_server = name;};
+        void set_content_length(size_t size)        {this->_content_length = size;};
 };
 
 std::ostream &operator<<(std::ostream &os, HttpResponse &response);
