@@ -1,22 +1,27 @@
 #pragma once
 #include <cstddef>
 #include <cstring>
-#include <map>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string>
-#include <vector>
-#include <fstream>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sstream>
+#include <fcntl.h>
+#include <fstream>
+#include <unistd.h>
 #include <iostream>
-#include <stdlib.h>
-#include <iostream>
+#include <map>
+#include <vector>
 
 #include "HttpRequest.hpp"
 
 class HttpResponse
 {
-    private:
-        std::string                                         _header; // all the Header
+    protected:
+        std::string                                         _response_header; // all the Header
         std::string                                         _version; // HTTP/1.1
         int                                                 _status_code; 
         std::string                                         _description; // status code desc
@@ -25,14 +30,14 @@ class HttpResponse
         size_t                                              _content_length; // the exact byte count of the body
         std::string                                         _server; // software name (webserv)
         std::string                                         _connection;
-        std::vector<char>                                   _body; // page content in binary form
+        char                                                *_response_body; // page content in binary form
     
     public:
         HttpResponse();
         HttpResponse &operator=(HttpResponse &other);
         HttpResponse(HttpRequest &request);
 
-        std::string                                         get_header()            {return this->_header;};
+        std::string                                         get_response_header()   {return this->_response_header;};
         std::string                                         get_version()           {return this->_version;};
         int                                                 get_status_code()       {return this->_status_code;};
         std::string                                         get_descrition()        {return this->_description;};
@@ -41,13 +46,11 @@ class HttpResponse
         std::vector<std::string>                            get_content_type()      {return this->_content_type;};
         std::string                                         get_server()            {return this->_server;};
         std::string                                         get_connection()        {return this->_connection;};
-        std::vector<char>                                   &get_body()             {return this->_body;};
+        char                                                *get_response_body()    {return this->_response_body;};
 
-        void set_header();
+        void set_response_header();
         void set_status_code(int code);
         void set_date();
-        void set_body_from_file(const std::string &file_path);
-        void set_body(const std::vector<char> &body);
         void set_version(std::string version)       {this->_version = version;};
         void set_connection(std::string connection) {this->_connection = connection;};
         void set_content_type(std::string type)     {this->_content_type.insert(this->_content_type.end(), type);};

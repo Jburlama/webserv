@@ -15,3 +15,4 @@
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 #include "Client.hpp"
+#include "File.hpp"

@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdio>
+#include <cstdio>
+#include <cstring>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/select.h>
@@ -9,11 +11,15 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <cstdlib>
 
 #include "webserv.hpp"
 #include "HttpResponse.hpp"
 #include "Client.hpp"
 #include "Server.hpp"
+#include "File.hpp"
+
+#define BUFFER_SIZE 40000
 
 class Core
 {
@@ -31,7 +37,8 @@ class Core
 
         void    get_client(int server_fd);
 
-        void    handle_read(int client_fd);
+        void    build_request(int client_fd);
+        void    build_response(int client_fd);
         void    handle_write(int client_fd);
         void    close_client(int fd);
         void    check_timeouts();

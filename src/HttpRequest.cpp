@@ -1,9 +1,5 @@
 #include "../includes/HttpRequest.hpp"
-#include <algorithm>
-#include <cstddef>
-#include <stdexcept>
-#include <iostream>
-#include <fstream>
+#include <sys/types.h>
 
 std::string g_methods[] = {
     "GET",
@@ -16,80 +12,22 @@ HttpRequest &HttpRequest::operator=(HttpRequest &other)
 {
     this->_method = other.get_method();
     this->_path = other.get_path();
-    this->_version = other.get_version();
-    this->_headers = other.get_headers();
-    this->_body = other.get_body();
+    this->_request_version = other.get_request_version();
+    this->_request_headers = other.get_request_headers();
+    this->_request_body = other.get_request_body();
     return *this;
-}
-
-HttpRequest::HttpRequest(const char *data)
-{
-    try
-    {
-        int state = START;
-
-        const char *str = &data[0];
-
-        for (int i = 0; i < 40000; ++i)
-        {
-            switch (state)
-            {
-                case START:  // skips empty line, and check if method start at the beguining of the line
-                    while (std::isspace(str[i]))
-                        ++i;
-                    if ((i == 0 && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D'))
-                    || (str[i - 1] == '\n' && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D')))
-                        state = METHOD;
-                    else
-                        throw std::logic_error("Error at status line: Method must start at the beguinning of the line");
-                    break ;
-                case METHOD:
-                    this->_method = this->_parse_method(--i, str);
-                    state = PATH;
-                    break;
-                case PATH:
-                    this->_path = this->_parse_path(i, str);
-                    state = VERSION;
-                    break ;
-                case VERSION:
-                    this->_version = this->_parse_version(i, str);
-                    state = HEADER;
-                    break ;
-                case HEADER:
-                    this->_headers = this->_parse_header(--i, str);
-                    state = BODY;
-                    break ;
-                case BODY:
-                    this->_body = data + --i;
-                    // TODO: Parse Body when Client sends a POST
-                    // Have to be able to deal with bynaty data
-                    //if (this->_headers.find("Content-Lenght") != this->_headers.end())
-                    //    this->_parse_body();
-                    state = END;
-                case END:
-                    return ;
-                default:
-                    break;
-            }
-        }
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << e.what() << "\n";
-        throw std::logic_error("Http request parser fails");
-    }
 }
 
     // "multipart/form-data";
 //------geckoformboundary4ea4b54d72f9e8748e9fe720d148cfd
 //Content-Disposition: form-data; name="file"; filename="The-Amazing-Power-of-Self-Discipline_-Miyamoto-Musashi.webp"
 //Content-Type: image/webp
-void HttpRequest::_parse_body()
+void HttpRequest::_parse_request_body()
 {
     std::string content_type;
-    std::string str(&this->_body[0]);
+    std::string str(&this->_request_body[0]);
 
-    content_type = this->_headers["Content-Type"][0];
+    content_type = this->_request_headers["Content-Type"][0];
 
     if (content_type.compare("multipart/form-data") == 0)
     {
@@ -104,7 +42,7 @@ void HttpRequest::_parse_body()
         size_t      file_start;
         size_t      file_end;
 
-        boundary = this->_headers["Content-Type"][1].c_str() + 9; // ----geckoformboundary
+        boundary = this->_request_headers["Content-Type"][1].c_str() + 9; // ----geckoformboundary
         boundary_poss = str.find(boundary);
         if (boundary_poss == std::string::npos)
             throw std::logic_error("Multipart boundary not found");
@@ -126,19 +64,19 @@ void HttpRequest::_parse_body()
             throw std::logic_error("Multipart header end not found");
         
         file_start = header_end + 4;  // Skip \r\n\r\n
-        file_end = std::atoi(this->_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
+        file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
 
         //// Write to file
         std::ofstream out_file(filename.c_str(), std::ios::binary);
         if (!out_file)
             throw std::runtime_error("Failed to create file: " + filename);
         
-        out_file.write(&this->_body[file_start], file_end);
+        out_file.write(&this->_request_body[file_start], file_end);
         out_file.close();
     }
 }
 
-std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int &i, const char *str)
+std::map<std::string, std::vector<std::string> > HttpRequest::_parse_request_header(int &i, const char *str)
 {
     std::map<std::string, std::vector<std::string> > headers;
     std::string name;
@@ -184,7 +122,7 @@ std::map<std::string, std::vector<std::string> > HttpRequest::_parse_header(int 
     return headers;
 }
 
-std::string HttpRequest::_parse_version(int &i, const char *str)
+std::string HttpRequest::_parse_request_version(int &i, const char *str)
 {
     std::string version_start = "HTTP/";
     std::string version;
@@ -256,6 +194,7 @@ std::string HttpRequest::_parse_method(int &i, const char *str)
     if (!g_methods[2][j] && str[i])
         return "DELETE";
 
+    std::cout << "str: " << str[i] << "\n";
     throw std::logic_error("Error at status line: incorrect Method");
     return NULL;
 }
@@ -264,6 +203,6 @@ std::ostream &operator<<(std::ostream &os, HttpRequest &request)
 {
     os << "Method: " << request.get_method() << "\n";
     os << "URI Path: " << request.get_path() << "\n";
-    os << "HTTP version: " << request.get_version() << "\n";
+    os << "HTTP version: " << request.get_request_version() << "\n";
     return os;
 }
