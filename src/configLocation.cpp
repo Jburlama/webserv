@@ -179,8 +179,11 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
 				continue;
 		}
 
+		std::cout << line << std::endl;
+		std::cout << insideLocationBlock << std::endl;
 		if (line.find('}') != std::string::npos){
 			if (!insideLocationBlock){
+				std::cout << line << std::endl;
 				std::cerr << "Invalid '}' outside of Location block: " << line << std::endl;
 				throw std::exception();
 			}
@@ -212,6 +215,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
 				
 					isKeyWordLocationPart(statement);
 				}
+				line = statement;
 			}
 			insideLocationBlock = false;
 
@@ -219,7 +223,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
 			if (!afterBrace.empty())
 				line = afterBrace; // re-parsed
 			else
-				continue;
+				return;
 		}
 
         if (!insideLocationBlock){

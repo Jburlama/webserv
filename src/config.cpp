@@ -37,8 +37,8 @@ void configValues::defaultPreConfigs(){
     	_root = "./www";
     	_index = "index.html";
 
-    	_location_index = "index.html";
-    	_location_allow_methods = "GET";
+    	_location_index = "";
+    	_location_allow_methods = "";
     	_location_upload_store = "";
     	_location_cgi_pass = "";
     	_location_cgi_path = "";
@@ -60,6 +60,11 @@ void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
 		std::cerr << "There are duplicates keywords in the configuration file" << std::endl;
 		throw std::exception();
 	}
+
+	if (_howManyIndex_location == 0)
+		_location_index = "index.html";
+	if (_howManyAllow_methods == 0)
+		_location_allow_methods = "GET";
 }
 
 void configValues::isKeyWord(std::string statement){
