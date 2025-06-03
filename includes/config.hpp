@@ -33,6 +33,7 @@ class configValues{
 		void parseConfig(const std::string& configFile);
 		void parseLocatePart(std::ifstream &file, std::string &line, std::string locationLine);
     void isKeyWord(std::string statement);
+    void isKeyWordLocationPart(std::string statement);
 
     void defaultPreConfigs(); //Default values or NULL
     void initializeKeyWordsVariables();
