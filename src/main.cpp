@@ -19,7 +19,7 @@ void configTesting(configValues test){
 	std::cout << "---------------" << std::endl;
 	std::cout << "LOCATION PART" << std::endl;
 	str = test.get_location_index();
-	std::cout << "_index: " << str << std::endl;
+	std::cout << "index: " << str << std::endl;
 	str = test.get_location_allow_methods();
 	std::cout << "allow_methods: " << str << std::endl;
 	str = test.get_location_upload_store();

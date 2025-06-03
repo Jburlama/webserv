@@ -151,14 +151,12 @@ bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, b
 	return false; // Not a location block   
 }
 
-
-
 /* Take info from .config and store it in this class */
 void configValues::parseLocatePart(std::ifstream &file, std::string &line){
     bool insideLocationBlock = false;
 	detectLocationBlock(file, line, insideLocationBlock);
 
-    while (std::getline(file, line)){ //its skipping locate / {  so always considers it outside the block
+    do{ //For some reason if \n isnt there it wont have ;
 
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
@@ -179,8 +177,6 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
 				continue;
 		}
 
-		std::cout << line << std::endl;
-		std::cout << insideLocationBlock << std::endl;
 		if (line.find('}') != std::string::npos){
 			if (!insideLocationBlock){
 				std::cout << line << std::endl;
@@ -203,16 +199,16 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
 				std::string statement;
 
 				//if (!beforeBrace.empty() && beforeBrace[beforeBrace.length() - 1] != ';') {
-				if (line[line.length() - 2] != ';'){
-					std::cerr << "Missing semicolon in Location's block at the end of: " << line << std::endl;
-					throw std::exception();
-				}
+				
 				while (std::getline(ss, statement, ';')){
 					statement.erase(0, statement.find_first_not_of(" \t"));
 					statement.erase(statement.find_last_not_of(" \t") + 1);
 					if (statement.empty())
 						continue;
-				
+					if (line[line.length() - 2] != ';'){
+						std::cerr << "Missing semicolon in Location's block at the end of: " << line << std::endl;
+						throw std::exception();
+					}
 					isKeyWordLocationPart(statement);
 				}
 				line = statement;
@@ -233,21 +229,21 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line){
         /* Remove trailing semicolon(;) */
 		std::stringstream ss(line);
 		std::string statement;
-
 		while (std::getline(ss, statement, ';')){
 		    statement.erase(0, statement.find_first_not_of(" \t"));
 		    statement.erase(statement.find_last_not_of(" \t") + 1);
+			std::cout << statement << std::endl;
 		
 		    if (statement.empty()){
 		        continue;
 			}
 			if (ss.eof() && line[line.length() - 1] != ';'){
-    		    std::cerr << "Missing semicolon in Location's block at the end of: " << line << std::endl;
+    		    std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
     		    throw std::exception();
     		}
 		    isKeyWordLocationPart(statement);
 		}
-    }
+    } while (std::getline(file, line));
 	if (insideLocationBlock == 1){
 		std::cout << "Location close brackets (}) missing" << std::endl;
 		throw std::exception();
