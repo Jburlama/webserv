@@ -250,7 +250,7 @@ void configValues::parseConfig(const std::string& configFile){
 				std::string statement;
 
 				if (line[line.length() - 2] != ';'){
-					std::cerr << "Missing semicolon at the end of: " << line << std::endl;
+					std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
 					throw std::exception();
 				}
 				while (std::getline(ss, statement, ';')){
@@ -284,17 +284,21 @@ void configValues::parseConfig(const std::string& configFile){
 		std::string statement;
 
 		while (std::getline(ss, statement, ';')){
-		    // Trim whitespace
-			if (!line.empty() && line[line.length() - 1] != ';'){
-				std::cerr << "Missing semicolon at the end of: " << line << std::endl;
-				throw std::exception();
-			}
 		    statement.erase(0, statement.find_first_not_of(" \t"));
 		    statement.erase(statement.find_last_not_of(" \t") + 1);
 		
-		    if (statement.empty())
+		    if (statement.empty()){
 		        continue;
-		
+			}
+
+			if (statement.find("location") == 0){
+    		    parseLocatePart(file, line, statement);
+    		    continue;
+    		}
+			if (ss.eof() && line[line.length() - 1] != ';'){
+    		    std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
+    		    throw std::exception();
+    		}
 		    isKeyWord(statement);
 		}
     }

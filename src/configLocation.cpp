@@ -1,132 +1,75 @@
-#include "config.hpp"
+#include "../includes/config.hpp"
 
-void configValues::isKeyWordLocationPart(std::string statement){
-	std::istringstream iss(statement); //splits a line into words/tokens
-    std::string key;
-    iss >> key;
+void configValues::isKeyWordLocationPart(std::string statement) {
+	std::istringstream iss(statement);
+	std::string key;
+	iss >> key;
 
-    if (key == "index"){
-    	iss >> _location_index;
-		while (iss >> key){
-    	    if (!_location_index.empty())if (key == "index"){
-    		iss >> _location_index;
-			while (iss >> key){
-    		    if (!_location_index.empty())
-    		        _location_index += " ";
-    		    _location_index += key;
-    		}
-			_howManyIndex_location++;
+	if (key == "index") {
+		iss >> _location_index;
+		while (iss >> key) {
+			if (!_location_index.empty()) _location_index += " ";
+			_location_index += key;
 		}
-		else if (key == "allow_methods"){
-    		while (iss >> key){
-    		    if (!_location_allow_methods.empty())
-    		        _location_allow_methods += " ";
-    		    _location_allow_methods += key;
-    		}
-			_howManyAllow_methods++;
-		}
-		else if (key == "upload_store"){
-		    iss >> _location_upload_store;
-			_howManyUpload_store++;
-		}
-		else if (key == "cgi_pass"){
-			while (iss >> key){
-    		    if (!_location_cgi_pass.empty())
-    		        _location_cgi_pass += " ";
-    		    _location_cgi_pass += key;
-    		}
-			_howManyCgi_pass++;
-		}
-		else if (key == "cgi_path"){
-			while (iss >> key){
-    		    if (!_location_cgi_path.empty())
-    		        _location_cgi_path += " ";
-    		    _location_cgi_path += key;
-    		}
-			_howManyCgi_path++;
-		}
-		else if (key == "cgi_ext"){
-			while (iss >> key){
-    		    if (!_location_cgi_ext.empty())
-    		        _location_cgi_ext += " ";
-    		    _location_cgi_ext += key;
-    		}
-			_howManyCgi_ext++;
-		}
-		else if (key == "root"){
-		    iss >> _location_root;
-			_howManyRoot_location++;
-		}
-		else if (key == "autoindex"){
-    		std::string value;
-    		iss >> value;
-    		if (value == "on;")
-    		    _location_autoindex = true;
-    		else if (value == "off;")
-    		    _location_autoindex = false;
-    		else
-    		    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
-			_howManyAutoindex++;
-		}
-    	        _location_index += " ";
-    	    _location_index += key;
-    	}
 		_howManyIndex_location++;
 	}
-	else if (key == "allow_methods"){
-    	while (iss >> key){
-    	    if (!_location_allow_methods.empty())
-    	        _location_allow_methods += " ";
-    	    _location_allow_methods += key;
-    	}
+	else if (key == "allow_methods") {
+		while (iss >> key) {
+			if (!_location_allow_methods.empty()) _location_allow_methods += " ";
+			_location_allow_methods += key;
+		}
 		_howManyAllow_methods++;
 	}
-	else if (key == "upload_store"){
-	    iss >> _location_upload_store;
+	else if (key == "upload_store") {
+		iss >> _location_upload_store;
 		_howManyUpload_store++;
 	}
-	else if (key == "cgi_pass"){
-		while (iss >> key){
-    	    if (!_location_cgi_pass.empty())
-    	        _location_cgi_pass += " ";
-    	    _location_cgi_pass += key;
-    	}
+	else if (key == "cgi_pass") {
+		while (iss >> key) {
+			if (!_location_cgi_pass.empty()) _location_cgi_pass += " ";
+			_location_cgi_pass += key;
+		}
 		_howManyCgi_pass++;
 	}
-	else if (key == "cgi_path"){
-		while (iss >> key){
-    	    if (!_location_cgi_path.empty())
-    	        _location_cgi_path += " ";
-    	    _location_cgi_path += key;
-    	}
+	else if (key == "cgi_path") {
+		while (iss >> key) {
+			if (!_location_cgi_path.empty()) _location_cgi_path += " ";
+			_location_cgi_path += key;
+		}
 		_howManyCgi_path++;
 	}
-	else if (key == "cgi_ext"){
-		while (iss >> key){
-    	    if (!_location_cgi_ext.empty())
-    	        _location_cgi_ext += " ";
-    	    _location_cgi_ext += key;
-    	}
+	else if (key == "cgi_ext") {
+		while (iss >> key) {
+			if (!_location_cgi_ext.empty()) _location_cgi_ext += " ";
+			_location_cgi_ext += key;
+		}
 		_howManyCgi_ext++;
 	}
-	else if (key == "root"){
-	    iss >> _location_root;
+	else if (key == "root") {
+		iss >> _location_root;
 		_howManyRoot_location++;
 	}
-	else if (key == "autoindex"){
-    	std::string value;
-    	iss >> value;
-    	if (value == "on;")
-    	    _location_autoindex = true;
-    	else if (value == "off;")
-    	    _location_autoindex = false;
-    	else
-    	    throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
+	else if (key == "autoindex") {
+		std::string value;
+		iss >> value;
+		if (value == "on;" || value == "on") {
+			_location_autoindex = true;
+		}
+		else if (value == "off;" || value == "off") {
+			_location_autoindex = false;
+		}
+		else {
+			throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
+		}
 		_howManyAutoindex++;
+	}
+	else {
+		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
+		throw std::exception();
 	}
 }
 
-bool detectLocationBlock(std::ifstream& file, std::string& line, bool& insideLocationBlock){
+bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, bool& insideLocationBlock){
 	if (line.find("location") == 0 && line.find("{") != std::string::npos){
 		std::string beforeBrace = line.substr(0, line.find("{"));
 		std::string afterBrace = line.substr(line.find("{") + 1);
@@ -274,7 +217,7 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 				std::string statement;
 
 				if (line[line.length() - 2] != ';'){
-					std::cerr << "Missing semicolon at the end of: " << line << std::endl;
+					std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
 					throw std::exception();
 				}
 				while (std::getline(ss, statement, ';')){
@@ -297,24 +240,40 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 			std::cout << "Invalid text outside location's block: " << line << std::endl;
 			throw std::exception();
 		}
-
-		std::istringstream ss(line); //splits a line into words/tokens
+        
+        if (line[line.size() - 1] != ';') {
+            std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
+            throw std::exception();
+        } 
+        std::istringstream ss(line);
         std::string key;
-        ss >> key;
-        while (std::getline(ss, key, ';')){
+        while (std::getline(ss, key, ';')) {
+            if (line[line.size() - 1] != ';') {
+                std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
+                throw std::exception();
+            } 
+            key.erase(0, key.find_first_not_of(" \t\r\n"));
+            key.erase(key.find_last_not_of(" \t\r\n") + 1);
+
+            if (key.empty())
+                continue;
+ 
+            isKeyWordLocationPart(key);
+        }
+
+        /* while (std::getline(ss, key, ';')){
 		    // Trim whitespace
 			if (!line.empty() && line[line.length() - 1] != ';'){
-				std::cerr << "Missing semicolon at the end of: " << line << std::endl;
+				std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
 				throw std::exception();
 			}
 		    key.erase(0, key.find_first_not_of(" \t"));
 		    key.erase(key.find_last_not_of(" \t") + 1);
-		
+
 		    if (key.empty())
 		        continue;
-		
 		    isKeyWordLocationPart(key);
-		}
+		} */
 	}
 	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_pass > 1 || _howManyCgi_path > 1 || _howManyCgi_ext > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){
 		std::cerr << "There are duplicates keywords in the configuration file (within a location block)!" << std::endl;
