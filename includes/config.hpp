@@ -40,7 +40,8 @@ class configValues{
     void defaultConfigs(int isThereA_listen, int isThereA_host); // Default values for listen & host. Check if there aren't douplicate keywords
 
     bool detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock); //Check if it's inside the server
-    void LocationPart(); // Parse location{}
+    bool detectLocationBlock(std::ifstream& file, std::string& line, bool& insideServerBlock);
+  
 
 	public:
 		configValues(std::string &configFile);
