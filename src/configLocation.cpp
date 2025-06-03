@@ -70,6 +70,7 @@ void configValues::isKeyWordLocationPart(std::string statement) {
 }
 
 bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, bool& insideLocationBlock){
+	
 	if (line.find("location") == 0 && line.find("{") != std::string::npos){
 		std::string beforeBrace = line.substr(0, line.find("{"));
 		std::string afterBrace = line.substr(line.find("{") + 1);
@@ -80,11 +81,15 @@ bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, b
 		else
 		    beforeBrace.clear(); // the string is all whitespace
 
-		beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1); //problem is here
+		//beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1); //problem is here
 		afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
 		afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
 
-		if (beforeBrace == "location"){
+		std::istringstream iss(beforeBrace);
+		std::string keyword, second, thrid;
+		iss >> keyword >> second >> thrid;
+
+		if (keyword == "location" && !second.empty()){
 			if (!insideLocationBlock){
 				insideLocationBlock = true;
 				if (!afterBrace.empty())
@@ -108,8 +113,8 @@ bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, b
 		std::string keyword, invalid;
 		iss >> keyword >> invalid;
 
-		if (!invalid.empty()){
-			std::cout << "Invalid text after location's keyword/s: " << line << std::endl;
+		if (!keyword.empty()){
+			std::cout << "Missing text after location's keyword/s: " << line << std::endl;
 			throw std::exception();
 		}
 
@@ -147,51 +152,28 @@ bool configValues::detectLocationBlock(std::ifstream& file, std::string& line, b
 }
 
 
-void configValues::parseLocatePart(std::ifstream &file, std::string &line, const std::string firstLine){
-	/* Create a loop that will give this function the line I need */
-	bool insideLocationBlock = false;
 
-    /* Skip empty lines and comments */
-	size_t commentPos = line.find('#');
-	if (commentPos != std::string::npos)
-		line = line.substr(0, commentPos);
+/* Take info from .config and store it in this class */
+void configValues::parseLocatePart(std::ifstream &file, std::string &line){
+    bool insideLocationBlock = false;
+	detectLocationBlock(file, line, insideLocationBlock);
 
-	line.erase(0, line.find_first_not_of(" \t"));
-	line.erase(line.find_last_not_of(" \t") + 1);
+    while (std::getline(file, line)){ //its skipping locate / {  so always considers it outside the block
 
-	/* Detect start of location block: */
-	if (firstLine.find("location") == 0 && firstLine.find("{") != std::string::npos){
-		std::istringstream iss(firstLine);
-		std::string first, second, third;
-		iss >> first >> second >> third;
-		(void)second;
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
 
-		if (first == "location" && third == "{"){
-			if (insideLocationBlock == false)
-				insideLocationBlock = true;
-			else{
-				std::cout << "Can't have a location{} inside another location!" << line << std::endl;
-				throw std::exception();
-			}
-		}
-		else{
-			std::cout << "Invalid syntax: unexpected token(s) after 'location'" << line << std::endl;
-			throw std::exception();
-		}
-	}
-	while (std::getline(file, line) && insideLocationBlock == true){
-        /* Skip empty lines and comments */
-	    size_t commentPos = line.find('#');
-	    if (commentPos != std::string::npos)
-	    	line = line.substr(0, commentPos);
+		size_t commentPos = line.find('#');
+		if (commentPos != std::string::npos)
+		    line = line.substr(0, commentPos);
 
-	    line.erase(0, line.find_first_not_of(" \t"));
-	    line.erase(line.find_last_not_of(" \t") + 1);
+		line.erase(0, line.find_first_not_of(" \t"));
+		line.erase(line.find_last_not_of(" \t") + 1);
 
 		if (line.empty())
 		    continue;
 
-        /* Detect start of server block */
+        /* Detect start of Location block */
 		if (detectLocationBlock(file, line, insideLocationBlock)){
 			if (line.empty())
 				continue;
@@ -199,13 +181,14 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 
 		if (line.find('}') != std::string::npos){
 			if (!insideLocationBlock){
-				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
+				std::cerr << "Invalid '}' outside of Location block: " << line << std::endl;
 				throw std::exception();
 			}
 		
 			std::string beforeBrace = line.substr(0, line.find('}'));
 			std::string afterBrace = line.substr(line.find('}') + 1);
 		
+			// Trim both parts
 			beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
 			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
 			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
@@ -216,17 +199,18 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 				std::stringstream ss(beforeBrace);
 				std::string statement;
 
+				//if (!beforeBrace.empty() && beforeBrace[beforeBrace.length() - 1] != ';') {
 				if (line[line.length() - 2] != ';'){
-					std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
+					std::cerr << "Missing semicolon in Location's block at the end of: " << line << std::endl;
 					throw std::exception();
 				}
 				while (std::getline(ss, statement, ';')){
 					statement.erase(0, statement.find_first_not_of(" \t"));
 					statement.erase(statement.find_last_not_of(" \t") + 1);
 					if (statement.empty())
-                        continue;
+						continue;
 				
-					isKeyWord(statement);
+					isKeyWordLocationPart(statement);
 				}
 			}
 			insideLocationBlock = false;
@@ -234,49 +218,34 @@ void configValues::parseLocatePart(std::ifstream &file, std::string &line, const
 			// Continue parsing after the }
 			if (!afterBrace.empty())
 				line = afterBrace; // re-parsed
-			return ;
+			else
+				continue;
 		}
+
         if (!insideLocationBlock){
-			std::cout << "Invalid text outside location's block: " << line << std::endl;
+			std::cout << "Invalid text outside Location's block: " << line << std::endl;
 			throw std::exception();
 		}
-        
-        if (line[line.size() - 1] != ';') {
-            std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
-            throw std::exception();
-        } 
-        std::istringstream ss(line);
-        std::string key;
-        while (std::getline(ss, key, ';')) {
-            if (line[line.size() - 1] != ';') {
-                std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
-                throw std::exception();
-            } 
-            key.erase(0, key.find_first_not_of(" \t\r\n"));
-            key.erase(key.find_last_not_of(" \t\r\n") + 1);
+        /* Remove trailing semicolon(;) */
+		std::stringstream ss(line);
+		std::string statement;
 
-            if (key.empty())
-                continue;
- 
-            isKeyWordLocationPart(key);
-        }
-
-        /* while (std::getline(ss, key, ';')){
-		    // Trim whitespace
-			if (!line.empty() && line[line.length() - 1] != ';'){
-				std::cerr << "Missing semicolon in location's block at the end of: " << line << std::endl;
-				throw std::exception();
-			}
-		    key.erase(0, key.find_first_not_of(" \t"));
-		    key.erase(key.find_last_not_of(" \t") + 1);
-
-		    if (key.empty())
+		while (std::getline(ss, statement, ';')){
+		    statement.erase(0, statement.find_first_not_of(" \t"));
+		    statement.erase(statement.find_last_not_of(" \t") + 1);
+		
+		    if (statement.empty()){
 		        continue;
-		    isKeyWordLocationPart(key);
-		} */
-	}
-	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_pass > 1 || _howManyCgi_path > 1 || _howManyCgi_ext > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){
-		std::cerr << "There are duplicates keywords in the configuration file (within a location block)!" << std::endl;
+			}
+			if (ss.eof() && line[line.length() - 1] != ';'){
+    		    std::cerr << "Missing semicolon in Location's block at the end of: " << line << std::endl;
+    		    throw std::exception();
+    		}
+		    isKeyWordLocationPart(statement);
+		}
+    }
+	if (insideLocationBlock == 1){
+		std::cout << "Location close brackets (}) missing" << std::endl;
 		throw std::exception();
 	}
 }

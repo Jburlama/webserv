@@ -230,11 +230,7 @@ void configValues::parseConfig(const std::string& configFile){
 				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
 				throw std::exception();
 			}
-			/* if (!line.empty() && line[line.length() - 2] != ';'){
-				std::cerr << "Missing semicolon at the end of: " << line << std::endl;
-				throw std::exception();
-			} */
-		
+
 			std::string beforeBrace = line.substr(0, line.find('}'));
 			std::string afterBrace = line.substr(line.find('}') + 1);
 		
@@ -292,7 +288,7 @@ void configValues::parseConfig(const std::string& configFile){
 			}
 
 			if (statement.find("location") == 0){
-    		    parseLocatePart(file, line, statement);
+    		    parseLocatePart(file, statement);
     		    continue;
     		}
 			if (ss.eof() && line[line.length() - 1] != ';'){

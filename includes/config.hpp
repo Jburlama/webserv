@@ -31,7 +31,7 @@ class configValues{
 		//std::vector<int> _serverFD; //_listen
 
 		void parseConfig(const std::string& configFile);
-		void parseLocatePart(std::ifstream &file, std::string &line, std::string locationLine);
+		void parseLocatePart(std::ifstream &file, std::string &line);
     void isKeyWord(std::string statement);
     void isKeyWordLocationPart(std::string statement);
 
