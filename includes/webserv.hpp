@@ -16,3 +16,4 @@
 #include "HttpResponse.hpp"
 #include "Client.hpp"
 #include "File.hpp"
+#include "Log.hpp"

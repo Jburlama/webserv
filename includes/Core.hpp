@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <fstream>
@@ -18,6 +19,7 @@
 #include "Client.hpp"
 #include "Server.hpp"
 #include "File.hpp"
+#include "Log.hpp"
 
 #define BUFFER_SIZE 40000
 

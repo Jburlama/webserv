@@ -104,7 +104,7 @@ void Client::set_response_body()
 
     read(this->_file_fd, this->_response_body, this->_content_length);
 
-    std::cout << "closed file: " << this->_file_fd << "\n";
+    Log::close_file(this->_file_fd);
     close(this->_file_fd);
 }
 
@@ -113,8 +113,8 @@ void Client::set_file(const char *file_path)
     int file_fd;
     file_fd = open(file_path, O_RDONLY); // Opens the file for read mode
     if (file_fd == -1)
-        throw std::runtime_error("Client.cpp:113");
-    std::cout << "Open file: " << file_fd << "\n";
+        throw std::runtime_error("Client.cpp:114");
+    Log::open_file(file_fd);
 
     this->_file_fd = file_fd;
     if (this->_file_fd == -1)

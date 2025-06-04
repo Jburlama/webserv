@@ -11,6 +11,7 @@
 
 #include "HttpResponse.hpp"
 #include "File.hpp"
+#include "Log.hpp"
 
 enum e_ClientState {
     BUILD_REQUEST = 1,
