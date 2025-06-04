@@ -42,26 +42,15 @@ HttpResponse::HttpResponse(HttpRequest &request)
     if (request.get_method().compare("GET") == 0)
     {
         this->set_status_code(200);
-        if (this->get_status_code() == 200)
-        {
-            this->set_response_header();
-        }
-        else if (this->get_status_code() == 404)
-        {
-            this->set_response_header();
-        }
+        this->set_response_header();
     }
     else if (request.get_method().compare("POST") == 0)
     {
         this->set_status_code(201);
         if (this->get_status_code() == 200)
-        {
             this->set_response_header();
-        }
         if (this->get_status_code() == 201)
-        {
             this->set_response_header();
-        }
     }
 }
 
@@ -74,6 +63,12 @@ void HttpResponse::set_response_header()
     {
         case 200:
             this->_response_header += "200 " + this->_description + "\r\n";
+            break ;
+        case 201:
+            this->_response_header += "201 " + this->_description + "\r\n";
+            break ;
+        case 204:
+            this->_response_header += "204 " + this->_description + "\r\n";
             break ;
         case 404:
             this->_response_header += "404 " + this->_description + "\r\n";
@@ -108,6 +103,9 @@ void HttpResponse::set_status_code(int code)
             break ;
         case 201:
             this->_description = "Created";
+            break ;
+        case 204:
+            this->_description = "No Content";
             break ;
         case 404:
             this->_description = "Not Found";

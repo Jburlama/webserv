@@ -30,4 +30,5 @@ class Log
         static void all_sent(int fd);
         static void connetion_close(int fd);
         static void timeout(int fd);
+        static void sent_with_no_body(int fd);
 };

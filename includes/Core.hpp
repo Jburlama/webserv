@@ -31,6 +31,7 @@ class Core
         time_t                  _timeout;   // Global timeout in seconds
         fd_set                  _read_set;  // Separate read FD set
         fd_set                  _write_set; // Separate write FD set
+        bool                    _client_connection;
     
     public:
         Core(); // Don't call default
@@ -38,6 +39,7 @@ class Core
         ~Core() {};
 
         void    get_client(int server_fd);
+        bool    get_connection_state() {return this->_client_connection;};
 
         void    build_request(int client_fd);
         void    build_response(int client_fd);
@@ -45,4 +47,5 @@ class Core
         void    close_client(int fd);
         void    check_timeouts();
         void    client_multiplex();
+        void    set_connection_state(bool state) {this->_client_connection = state;};
 };

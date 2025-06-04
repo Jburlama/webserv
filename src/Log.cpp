@@ -59,26 +59,31 @@ void Log::close_file(int fd)
 
 void Log::sending_header(int fd)
 {
-    std::cout << PURPLE"Sending Header to " << fd << "\n";
+    std::cout << PURPLE"Sending Header to " << fd << "\n" RESET;
 }
 
 void Log::sending_body(int fd)
 {
-    std::cout << PURPLE"Sending body to " << fd << "\n";
+    std::cout << PURPLE"Sending body to " << fd << "\n" RESET;
 }
 
 void Log::all_sent(int fd)
 {
-    std::cout << PURPLE"All sent to " << fd << "\n";
+    std::cout << PURPLE"All sent to " << fd << "\n" RESET;
 }
 
 void Log::connetion_close(int fd)
 {
-    std::cout << RED"Connetion closed with " << fd << "\n";
+    std::cout << RED"Connetion closed with " << fd << "\n" RESET;
 }
 
 
 void Log::timeout(int fd)
 {
-    std::cout << RED"Connetion timeout with " << fd << "\n";
+    std::cout << RED"Connetion timeout with " << fd << "\n" RESET;
+}
+
+void Log::sent_with_no_body(int fd)
+{
+    std::cout << PURPLE"Response sent with no body to " << fd << "\n" RESET;
 }

@@ -8,7 +8,7 @@ Core::Core()
 // Inicialize the servers by adding to the servers map
 // Each server is accessible by its file descriptor
 Core::Core(std::vector<int> ports)
-:_timeout(75) // Connetion timeout 75 seconds
+:_timeout(75),_client_connection(false) // Connetion timeout 75 seconds
 {   
     FD_ZERO(&this->_read_set);
     FD_ZERO(&this->_write_set);
@@ -57,7 +57,7 @@ void Core::client_multiplex()
     int             ready; // Select return the amount of fd is ready
 
     //  sec timeout, so that select doesn't block;
-    tv.tv_sec = 5;
+    tv.tv_sec = 1;
     tv.tv_usec = 0;
     while (42)
     {
@@ -66,11 +66,10 @@ void Core::client_multiplex()
         write_ready = this->_write_set;
         
         Log::listening();
-        ready = select(FD_SETSIZE, &read_ready, &write_ready, NULL, &tv);
+        ready = select(FD_SETSIZE + 1, &read_ready, &write_ready, NULL, &tv);
         if (ready == -1)
-            throw std::runtime_error("Core.cpp:68\n");
+            throw std::runtime_error("Core.cpp:69\n");
         
-        // Check servers
         for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
         {
             if (FD_ISSET(it->first, &read_ready)) // Check if fd is still present in the set
@@ -95,6 +94,8 @@ void Core::client_multiplex()
                         break;
                 }
             }
+            if (this->get_connection_state()) // Without this check the next if would segfault when client closed connection bc the Client was erased
+                break ;
             else if (FD_ISSET(it->first, &this->_write_set)) // Check if client is in write set
                 this->handle_write(it->first); // Call send().
         }
@@ -113,7 +114,10 @@ void Core::build_request(int client_fd)
     if (bytes < 0)
         throw std::runtime_error("Core.cpp:114\n");
     else if (bytes == 0) // Client closed connetiion
+    {
         close_client(client_fd);
+        this->set_connection_state(true);
+    }
     else if (bytes > 0)
     {
         Client  &client = this->_clients[client_fd];
@@ -121,11 +125,13 @@ void Core::build_request(int client_fd)
 
         Log::building_request(client_fd);
         client.set_resquest(buffer, bytes);
-        file_fd = client.get_file_fd();
-        FD_SET(file_fd, &this->_read_set); // add the client fd to read set
-        Log::on_read(file_fd);
+        if (client.get_content_lenght() != 0) // File is not empty, if it was fd was alreay closed in set_file()
+        {
+            file_fd = client.get_file_fd();
+            FD_SET(file_fd, &this->_read_set); // add the file fd to read set
+            Log::on_read(file_fd);
+        }
         client.set_last_activity();
-
     } 
 }
 
@@ -158,11 +164,25 @@ void Core::handle_write(int client_fd)
             Log::sending_header(client_fd);
             bytes = send(client_fd, &client.get_response_header()[0], client.get_response_header().length(), 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:160\n");
+                throw std::runtime_error("Core.cpp:159\n");
             client.set_client_state(WRITING_BODY);
             break ;
 
         case WRITING_BODY:
+            if (client.get_content_lenght() == 0) // Empty body
+            {
+                Log::sent_with_no_body(client_fd);
+                if (client.get_connection().compare("close") == 0)
+                    this->close_client(client_fd);
+                delete [] client.get_response_body();
+                client.set_bytes_sent(0);
+                client.set_client_state(BUILD_REQUEST);
+                FD_CLR(client_fd, &this->_write_set);
+                Log::rm_from_write(client_fd);
+                FD_SET(client_fd, &this->_read_set);
+                Log::on_read(client_fd);
+                break ;
+            }
             Log::sending_body(client_fd);
             bytes_sent = client.get_bytes_sent();
             bytes = send(client_fd, client.get_response_body() + bytes_sent, client.get_content_lenght() - bytes_sent, 0);
