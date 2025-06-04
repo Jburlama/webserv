@@ -116,7 +116,7 @@ void configValues::isKeyWord(std::string statement){
 	}
 }
 
-bool configValues::detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock){
+bool configValues::detectServerBlock(std::istream& file, std::string& line, bool& insideServerBlock){
 	if (line.find("server") == 0 && line.find("{") != std::string::npos){
 		std::string beforeBrace = line.substr(0, line.find("{"));
 		std::string afterBrace = line.substr(line.find("{") + 1);
@@ -284,7 +284,7 @@ void configValues::parseConfig(const std::string& configFile){
 		std::stringstream ss(line);
 		std::string statement;
 
-		while (std::getline(ss, statement, ';')){
+		while (std::getline(ss, statement, ';')){ //loop for each line
 		    statement.erase(0, statement.find_first_not_of(" \t"));
 		    statement.erase(statement.find_last_not_of(" \t") + 1);
 		
@@ -293,13 +293,13 @@ void configValues::parseConfig(const std::string& configFile){
 			}
 
 			if (statement.find("location") == 0){
-    		    parseLocatePart(file, statement);
+    		    parseLocatePart(file, statement, line);
     		    continue;
     		}
-			if (ss.eof() && line[line.length() - 1] != ';'){
-    		    std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
-    		    throw std::exception();
-    		}
+			if (statement.empty() || line.find(statement + ";") == std::string::npos) {
+			    std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
+			    throw std::exception();
+			}
 		    isKeyWord(statement);
 		}
     }
@@ -309,7 +309,7 @@ void configValues::parseConfig(const std::string& configFile){
 	}
     file.close();
 }
-
+//istream can read both files and strings
 
 
 /* Getters */

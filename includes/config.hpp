@@ -31,7 +31,8 @@ class configValues{
 		//std::vector<int> _serverFD; //_listen
 
 		void parseConfig(const std::string& configFile);
-		void parseLocatePart(std::ifstream &file, std::string &line);
+		//void parseLocatePart(std::ifstream &file, std::string &statement, std::string &line);
+    void parseLocatePart(std::istream &file, std::string &statement, std::string &line);
     void isKeyWord(std::string statement);
     void isKeyWordLocationPart(std::string statement);
 
@@ -39,8 +40,10 @@ class configValues{
     void initializeKeyWordsVariables();
     void defaultConfigs(int isThereA_listen, int isThereA_host); // Default values for listen & host. Check if there aren't douplicate keywords
 
-    bool detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock); //Check if it's inside the server
-    bool detectLocationBlock(std::ifstream& file, std::string& line, bool& insideServerBlock);
+    //bool detectServerBlock(std::ifstream& file, std::string& line, bool& insideServerBlock); //Check if it's inside the server
+    bool detectServerBlock(std::istream& file, std::string& line, bool& insideServerBlock); //Check if it's inside the server
+    //bool detectLocationBlock(std::ifstream& file, std::string& line, bool& insideServerBlock);
+    bool detectLocationBlock(std::istream& file, std::string& line, bool& insideServerBlock);
   
 
 	public:
