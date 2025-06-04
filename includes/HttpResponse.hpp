@@ -37,16 +37,16 @@ class HttpResponse
         HttpResponse &operator=(HttpResponse &other);
         HttpResponse(HttpRequest &request);
 
-        std::string                                         get_response_header()   {return this->_response_header;};
-        std::string                                         get_version()           {return this->_version;};
-        int                                                 get_status_code()       {return this->_status_code;};
-        std::string                                         get_descrition()        {return this->_description;};
-        std::string                                         get_date()              {return this->_date;};
-        size_t                                              get_content_lenght()    {return this->_content_length;};
-        std::vector<std::string>                            get_content_type()      {return this->_content_type;};
-        std::string                                         get_server()            {return this->_server;};
-        std::string                                         get_connection()        {return this->_connection;};
-        char                                                *get_response_body()    {return this->_response_body;};
+        std::string              get_response_header()  {return this->_response_header;};
+        std::string              get_version()          {return this->_version;};
+        int                      get_status_code()      {return this->_status_code;};
+        std::string              get_descrition()       {return this->_description;};
+        std::string              get_date()             {return this->_date;};
+        ssize_t                  get_content_lenght()   {return this->_content_length;};
+        std::vector<std::string> get_content_type()     {return this->_content_type;};
+        std::string              get_server()           {return this->_server;};
+        std::string              get_connection()       {return this->_connection;};
+        char                     *get_response_body()   {return this->_response_body;};
 
         void set_response_header();
         void set_status_code(int code);

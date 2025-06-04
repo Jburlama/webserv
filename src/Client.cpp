@@ -57,6 +57,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
 
                 case END:
                     this->set_client_state(BUILD_RESPONSE);
+                    this->set_parser_state(START);
                     return ;
 
                 default:
@@ -77,6 +78,7 @@ void Client::set_response()
 
     headers = this->get_request_headers();
 
+    this->set_bytes_sent(0);
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
     this->set_date();
@@ -84,9 +86,9 @@ void Client::set_response()
         this->set_connection(headers["Connection"][0]);
     if (this->get_method().compare("GET") == 0)
     {
+        this->set_status_code(200);
         this->set_response_body(); // Reads and Closes the file fd
         this->set_response_header();
-        this->set_status_code(200);
     }
     return ;
 }
@@ -94,7 +96,6 @@ void Client::set_response()
 void Client::set_response_body()
 {
     this->_content_length = this->_file_stats.st_size;
-    std::cout << "File size: " << this->_content_length << "\n";
 
     this->_response_body = new char[this->_content_length];
     if (this->_response_body == NULL)
@@ -103,12 +104,8 @@ void Client::set_response_body()
 
     read(this->_file_fd, this->_response_body, this->_content_length);
 
-    for (size_t i = 0; i < this->_content_length; ++i)
-        std::cout << this->_response_body[i];
-    std::cout << "\n";
-
+    std::cout << "closed file: " << this->_file_fd << "\n";
     close(this->_file_fd);
-    this->_file_fd = -1;
 }
 
 void Client::set_file(const char *file_path)
@@ -116,14 +113,15 @@ void Client::set_file(const char *file_path)
     int file_fd;
     file_fd = open(file_path, O_RDONLY); // Opens the file for read mode
     if (file_fd == -1)
-        throw std::runtime_error("Client.cpp:95");
+        throw std::runtime_error("Client.cpp:113");
+    std::cout << "Open file: " << file_fd << "\n";
 
     this->_file_fd = file_fd;
     if (this->_file_fd == -1)
         throw std::runtime_error("File.cpp:5");
 
     if (stat(file_path, &this->_file_stats) == -1) // Gest stats from the file
-        throw std::runtime_error("File.cpp:9");
+        throw std::runtime_error("Client.cpp:122");
 
     this->_file_bytes = this->_file_stats.st_size;
     this->_file_path = file_path;

@@ -1,4 +1,5 @@
 #include "../includes/Core.hpp"
+#include <sys/select.h>
 
 Core::Core()
 {
@@ -63,8 +64,8 @@ void Core::client_multiplex()
         write_ready = this->_write_set;
         
         ready = select(FD_SETSIZE, &read_ready, &write_ready, NULL, &tv);
-        if (ready < 0)
-            throw std::runtime_error("Core.cpp:154\n");
+        if (ready == -1)
+            throw std::runtime_error("Core.cpp:66\n");
         
         // Check servers
         for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
@@ -92,25 +93,16 @@ void Core::client_multiplex()
                     case BUILD_RESPONSE:
                         std::cout << "Building Response for client: " << it->first << "\n";
                         this->build_response(it->first);
-                        exit(1);
-                        //client.set_response(b);
-                        // Switch to write mode
-                        //FD_SET(client_fd, &this->_write_set); // Add to write set
-                        //client.set_client_state(WRITING_HEADER);
                         break;
-
                     default:
                         break;
                 }
             }
-            /*
-            if (FD_ISSET(it->first, &this->_write_set)) // Check if client is in write set
+            else if (FD_ISSET(it->first, &this->_write_set)) // Check if client is in write set
             {
-                continue;
                 std::cout << "Writing to Client: " << it->first << "\n";
                 this->handle_write(it->first); // Call send().
             }
-            */
         }
         // Close a client connection if timeout as exceeded
         this->check_timeouts();
@@ -135,7 +127,6 @@ void Core::build_request(int client_fd)
 
         std::cout << "Building Request for " << client_fd << "\n";
         client.set_resquest(buffer, bytes);
-
         file_fd = client.get_file_fd();
         FD_SET(file_fd, &this->_read_set); // add the client fd to read set
         client.set_last_activity();
@@ -148,42 +139,49 @@ void Core::build_response(int client_fd)
 
     client.set_response();
     client.set_client_state(WRITING_HEADER);
-    //std::cout << "[ Response ] " << "\n";
-    //std::cout << &client.get_response_body()[0];
-
+    client.set_last_activity();
+    FD_CLR(client.get_file_fd(), &this->_read_set); // rm file from read set
+    FD_CLR(client_fd, &this->_read_set); // rm from read set
+    FD_SET(client_fd, &this->_write_set); // Add to write set
     return ;
 }
 
 void Core::handle_write(int client_fd)
 {
     Client              &client     = this->_clients[client_fd];
-    HttpResponse        &response   = client.get_response();
     ssize_t             bytes_sent;
     ssize_t             bytes;
+
 
     switch (client.get_client_state()) {
         case WRITING_HEADER:
             std::cout << " [ Sending Header ] " << "\n";
-            bytes = send(client_fd, &response.get_response_header()[0], response.get_response_header().length(), 0);
+            bytes = send(client_fd, &client.get_response_header()[0], client.get_response_header().length(), 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:146\n");
+                throw std::runtime_error("Core.cpp:160\n");
             client.set_client_state(WRITING_BODY);
             break ;
 
         case WRITING_BODY:
             std::cout << " [ Sending Body ] " << "\n";
             bytes_sent = client.get_bytes_sent();
-            bytes = send(client_fd, response.get_response_body(), response.get_content_lenght(), 0);
+            bytes = send(client_fd, client.get_response_body() + bytes_sent, client.get_content_lenght() - bytes_sent, 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:156\n");
-            else if (bytes == 0) // Response all sent
+                throw std::runtime_error("Core.cpp:169\n");
+            else if (bytes > 0)
             {
-                std::cout << "[ Response All Sent ] " << "\n";
-                //FD_CLR(client_fd, &this->_write_set); // Remove from writting set
-                if (response.get_connection().compare("close") == 0)
-                    this->close_client(client_fd);
-                client.set_bytes_sent(0);
-                client.set_client_state(BUILD_REQUEST);
+                bytes_sent = bytes + client.get_bytes_sent();
+                if (bytes_sent == client.get_content_lenght()) // Body all sent
+                {
+                    std::cout << "[ Response All Sent ] " << "\n";
+                    if (client.get_connection().compare("close") == 0)
+                        this->close_client(client_fd);
+                    delete [] client.get_response_body();
+                    client.set_bytes_sent(0);
+                    client.set_client_state(BUILD_REQUEST);
+                    FD_CLR(client_fd, &this->_write_set);
+                    FD_SET(client_fd, &this->_read_set);
+                }
             }
             bytes_sent += bytes;
             client.set_bytes_sent(bytes_sent);
@@ -210,17 +208,14 @@ void Core::close_client(int fd)
 void Core::check_timeouts()
 {
     time_t              now;
-    std::vector<int>    to_remove;
     
     now = time(0);
     for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
     {
         if (now - it->second.get_last_activity() > this->_timeout)
-            to_remove.push_back(it->first);
+        {
+            std::cout << "[ Timeout ] closing: " << it->first << "\n";
+            close_client(it->first);
+        }
     }
-
-    for (std::vector<int>::iterator it = to_remove.begin(); it != to_remove.end(); ++it)
-        close_client(*it);
 }
-
-

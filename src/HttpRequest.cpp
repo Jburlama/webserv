@@ -194,7 +194,6 @@ std::string HttpRequest::_parse_method(int &i, const char *str)
     if (!g_methods[2][j] && str[i])
         return "DELETE";
 
-    std::cout << "str: " << str[i] << "\n";
     throw std::logic_error("Error at status line: incorrect Method");
     return NULL;
 }

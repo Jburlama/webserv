@@ -40,7 +40,7 @@ public File
         time_t              get_last_activity()         {return this->_last_activity;};
         HttpResponse        &get_response()             {return this->_response;};
         int                 get_client_state()          {return this->_client_state;};
-        size_t              get_bytes_sent()            {return this->_bytes_sent;};
+        ssize_t             get_bytes_sent()            {return this->_bytes_sent;};
         File                &get_files()                {return this->_file;};
 
         void    set_resquest(const char *buffer, ssize_t bytes);
@@ -48,7 +48,8 @@ public File
         void    set_last_activity()                     {this->_last_activity = time(NULL);};
         void    set_client_state(e_ClientState state)   {this->_client_state = state;};
         void    set_response(HttpResponse response)     {this->_response = response;};
-        void    set_bytes_sent(size_t bytes)            {this->_bytes_sent = bytes;};
         void    set_file(const char *path_name);
         void    set_response_body();
+        void    set_bytes_sent(ssize_t bytes)           {this->_bytes_sent = bytes;};
+        void    reset();
 };
