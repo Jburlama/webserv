@@ -275,31 +275,29 @@ void configValues::parseConfig(const std::string& configFile){
 				continue;
 		}
 
-
         if (!insideServerBlock){
 			std::cout << "Invalid text outside server's block: " << line << std::endl;
 			throw std::exception();
 		}
-        /* Remove trailing semicolon(;) */
+		
+		std::cout << "[DEBUG] Statement: '" << line << "'" << std::endl;
+		if (line.find("location") == 0 && line.find("{") != std::string::npos) {
+		    parseLocatePart(file, line, line);
+		    continue;
+		}
+		// Split by ';'
 		std::stringstream ss(line);
 		std::string statement;
-
-		while (std::getline(ss, statement, ';')){ //loop for each line
+		while (std::getline(ss, statement, ';')) {
 		    statement.erase(0, statement.find_first_not_of(" \t"));
 		    statement.erase(statement.find_last_not_of(" \t") + 1);
 		
-		    if (statement.empty()){
+		    if (statement.empty())
 		        continue;
-			}
-
-			if (statement.find("location") == 0){
-    		    parseLocatePart(file, statement, line);
-    		    continue;
-    		}
-			if (statement.empty() || line.find(statement + ";") == std::string::npos) {
-			    std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
-			    throw std::exception();
-			}
+		    if (statement.empty() || line.find(statement + ";") == std::string::npos) {
+		        std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
+		        throw std::exception();
+		    }
 		    isKeyWord(statement);
 		}
     }

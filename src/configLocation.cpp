@@ -209,7 +209,6 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
             statement.erase(statement.find_last_not_of(" \t") + 1);
             if (statement.empty())
                 continue;
-			std::cout << "[DEBUG] Statement: '" << statement << "'" << std::endl;
             isKeyWordLocationPart(statement);
         }
 
