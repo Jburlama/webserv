@@ -193,10 +193,8 @@ bool configValues::detectServerBlock(std::istream& file, std::string& line, bool
 	return false; // Not a server block
 }
 
-
-/* Take info from .config and store it in this class */
 void configValues::parseConfig(const std::string& configFile){
-	defaultPreConfigs();
+    defaultPreConfigs();
 
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
@@ -208,105 +206,283 @@ void configValues::parseConfig(const std::string& configFile){
     bool insideServerBlock = false;
 
     while (std::getline(file, line)){
-        /* Remove leading/trailing whitespace */
+        // Remove leading/trailing whitespace
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
 
-        /* Skip empty lines and comments */
-		size_t commentPos = line.find('#');
-		if (commentPos != std::string::npos)
-		    line = line.substr(0, commentPos);
+        // Remove comments
+        size_t commentPos = line.find('#');
+        if (commentPos != std::string::npos)
+            line = line.substr(0, commentPos);
 
-		line.erase(0, line.find_first_not_of(" \t"));
-		line.erase(line.find_last_not_of(" \t") + 1);
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
 
-		// Now skip if empty
-		if (line.empty())
-		    continue;
+        if (line.empty())
+            continue;
 
-        /* Detect start of server block */
-		if (detectServerBlock(file, line, insideServerBlock)){
-			if (line.empty())
-				continue;
-		}
+        if (detectServerBlock(file, line, insideServerBlock)){
+            if (line.empty())
+                continue;
+        }
 
-		if (line.find('}') != std::string::npos){
-			if (!insideServerBlock){
-				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
-				throw std::exception();
-			}
+        if (line.find('}') != std::string::npos){
+            if (!insideServerBlock){
+                std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
+                throw std::exception();
+            }
 
-			std::string beforeBrace = line.substr(0, line.find('}'));
-			std::string afterBrace = line.substr(line.find('}') + 1);
-		
-			// Trim both parts
-			beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
-			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
-			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
-			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
-		
-			// First, parse the config that comes before the closing brace
-			if (!beforeBrace.empty()){
-				std::stringstream ss(beforeBrace);
-				std::string statement;
+            std::string beforeBrace = line.substr(0, line.find('}'));
+            std::string afterBrace = line.substr(line.find('}') + 1);
 
-				if (line[line.length() - 2] != ';'){
-					std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
-					throw std::exception();
-				}
-				while (std::getline(ss, statement, ';')){
-					statement.erase(0, statement.find_first_not_of(" \t"));
-					statement.erase(statement.find_last_not_of(" \t") + 1);
-					if (statement.empty())
-						continue;
-				
-					isKeyWord(statement);
-				}
-			}
-			// Finalize current server block
-			defaultConfigs(_howManyListen, _howManyHost);
-			initializeKeyWordsVariables(); // For new block
-			insideServerBlock = false;
+            // Trim both parts
+            beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
+            beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+            afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+            afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
 
-			// Continue parsing after the }
-			if (!afterBrace.empty())
-				line = afterBrace; // re-parsed
-			else
-				continue;
-		}
+            if (!beforeBrace.empty()){
+                std::stringstream ss(beforeBrace);
+                std::string statement;
+
+                while (std::getline(ss, statement, ';')){
+                    statement.erase(0, statement.find_first_not_of(" \t"));
+                    statement.erase(statement.find_last_not_of(" \t") + 1);
+                    if (statement.empty())
+                        continue;
+
+                    isKeyWord(statement);
+                }
+            }
+            insideServerBlock = false; // Only this!
+            if (!afterBrace.empty())
+                line = afterBrace; // re-parsed
+            else
+                continue;
+        }
 
         if (!insideServerBlock){
-			std::cout << "Invalid text outside server's block: " << line << std::endl;
-			throw std::exception();
-		}
-		
-		std::cout << "[DEBUG] Statement: '" << line << "'" << std::endl;
-		if (line.find("location") == 0 && line.find("{") != std::string::npos) {
-		    parseLocatePart(file, line, line);
-		    continue;
-		}
-		// Split by ';'
-		std::stringstream ss(line);
-		std::string statement;
-		while (std::getline(ss, statement, ';')) {
-		    statement.erase(0, statement.find_first_not_of(" \t"));
-		    statement.erase(statement.find_last_not_of(" \t") + 1);
-		
-		    if (statement.empty())
-		        continue;
-		    if (statement.empty() || line.find(statement + ";") == std::string::npos) {
-		        std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
-		        throw std::exception();
-		    }
-		    isKeyWord(statement);
-		}
+            std::cout << "Invalid text outside server's block: " << line << std::endl;
+            throw std::exception();
+        }
+
+        // Handle location block
+        if (line.find("location") == 0 && line.find("{") != std::string::npos) {
+            parseLocatePart(file, line, line);
+            continue;
+        }
+
+        // Split by ';'
+        std::stringstream ss(line);
+        std::string statement;
+        while (std::getline(ss, statement, ';')) {
+            statement.erase(0, statement.find_first_not_of(" \t"));
+            statement.erase(statement.find_last_not_of(" \t") + 1);
+
+            if (statement.empty())
+                continue;
+            isKeyWord(statement);
+        }
     }
-	if (insideServerBlock == 1){
-		std::cout << "Server or location close brackets (}) missing" << std::endl;
-		throw std::exception();
-	}
+
+    // At the end, apply defaults/checks only once for the server block you have
+    defaultConfigs(_howManyListen, _howManyHost);
+
     file.close();
 }
+
+/* Take info from .config and store it in this class */
+//void configValues::parseConfig(const std::string& configFile){
+//	defaultPreConfigs();
+//
+//    std::ifstream file(configFile.c_str());
+//    if (!file.is_open()){
+//        std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
+//        return ;
+//    }
+//
+//    std::string line;
+//    bool insideServerBlock = false;
+//
+//    while (std::getline(file, line)){
+//        /* Remove leading/trailing whitespace */
+//        line.erase(0, line.find_first_not_of(" \t"));
+//        line.erase(line.find_last_not_of(" \t") + 1);
+//
+//        /* Skip empty lines and comments */
+//		size_t commentPos = line.find('#');
+//		if (commentPos != std::string::npos)
+//		    line = line.substr(0, commentPos);
+//
+//		line.erase(0, line.find_first_not_of(" \t"));
+//		line.erase(line.find_last_not_of(" \t") + 1);
+//
+//		// Now skip if empty
+//		if (line.empty())
+//		    continue;
+//
+//        /* Detect start of server block */
+//		if (detectServerBlock(file, line, insideServerBlock)){
+//			if (line.empty())
+//				continue;
+//		}
+//
+//		if (line.find('}') != std::string::npos){
+//			if (!insideServerBlock){
+//				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
+//				throw std::exception();
+//			}
+//
+//			std::string beforeBrace = line.substr(0, line.find('}'));
+//			std::string afterBrace = line.substr(line.find('}') + 1);
+//		
+//			// Trim both parts
+//			beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
+//			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+//			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+//			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
+//		
+//			// First, parse the config that comes before the closing brace
+//			if (!beforeBrace.empty()){
+//				std::stringstream ss(beforeBrace);
+//				std::string statement;
+//
+//				if (line[line.length() - 2] != ';'){
+//					std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
+//					throw std::exception();
+//				}
+//				while (std::getline(ss, statement, ';')){
+//					statement.erase(0, statement.find_first_not_of(" \t"));
+//					statement.erase(statement.find_last_not_of(" \t") + 1);
+//					if (statement.empty())
+//						continue;
+//				
+//					isKeyWord(statement);
+//				}
+//			}
+//			// Finalize current server block
+//			defaultConfigs(_howManyListen, _howManyHost);
+//			initializeKeyWordsVariables(); // For new block
+//			insideServerBlock = false;
+//
+//			// Continue parsing after the }
+//			if (!afterBrace.empty())
+//				line = afterBrace; // re-parsed
+//			else
+//				continue;
+//		}
+//
+//        if (!insideServerBlock){
+//			std::cout << "Invalid text outside server's block: " << line << std::endl;
+//			throw std::exception();
+//		}
+//		
+//		std::cout << "[DEBUG] Statement: '" << line << "'" << std::endl;
+//		if (line.find("location") == 0 && line.find("{") != std::string::npos) {
+//		    parseLocatePart(file, line, line);
+//		    continue;
+//		}
+//		// Split by ';'
+//
+//		while (std::getline(file, line)){
+//		    // Remove comments and whitespace as before
+//		    line.erase(0, line.find_first_not_of(" \t"));
+//		    line.erase(line.find_last_not_of(" \t") + 1);
+//
+//		    size_t commentPos = line.find('#');
+//		    if (commentPos != std::string::npos)
+//		        line = line.substr(0, commentPos);
+//		    line.erase(0, line.find_first_not_of(" \t"));
+//		    line.erase(line.find_last_not_of(" \t") + 1);
+//
+//		    if (line.empty())
+//		        continue;
+//		    if (detectServerBlock(file, line, insideServerBlock)) {
+//		        if (line.empty())
+//		            continue;
+//		    }
+//		    if (!insideServerBlock){
+//		        std::cout << "Invalid text outside server's block: " << line << std::endl;
+//		        throw std::exception();
+//		    }
+//
+//		    // 1. **HANDLE LOCATION IMMEDIATELY IF IT APPEARS**
+//		    if (line.find("location") == 0 && line.find("{") != std::string::npos) {
+//		        parseLocatePart(file, line, line);
+//		        continue;
+//		    }
+//
+//		    // 2. **HANDLE CLOSING BRACE**
+//		    if (line.find('}') != std::string::npos) {
+//		        std::string beforeBrace = line.substr(0, line.find('}'));
+//		        std::string afterBrace = line.substr(line.find('}') + 1);
+//			
+//		        // Remove whitespace
+//		        beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
+//		        beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
+//		        afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
+//		        afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
+//			
+//		        // ***RECURSIVELY HANDLE WHAT'S BEFORE THE BRACE***
+//		        if (!beforeBrace.empty()) {
+//		            // If this part is a location, handle it!
+//		            if (beforeBrace.find("location") == 0 && beforeBrace.find("{") != std::string::npos) {
+//		                parseLocatePart(file, beforeBrace, beforeBrace);
+//		            } else {
+//		                std::stringstream ss(beforeBrace);
+//		                std::string statement;
+//		                while (std::getline(ss, statement, ';')) {
+//		                    statement.erase(0, statement.find_first_not_of(" \t"));
+//		                    statement.erase(statement.find_last_not_of(" \t") + 1);
+//		                    if (statement.empty())
+//		                        continue;
+//		                    isKeyWord(statement);
+//		                }
+//		            }
+//		        }
+//			
+//		        // Finalize current server block
+//		        insideServerBlock = false;
+//			
+//		        // If there's more after the brace, re-parse the line
+//		        if (!afterBrace.empty())
+//		            line = afterBrace;
+//		        else
+//		            continue;
+//		    }
+//		
+//		    // 3. **NORMAL KEYWORD PARSING**
+//		    std::stringstream ss(line);
+//		    std::string statement;
+//		    while (std::getline(ss, statement, ';')) {
+//		        statement.erase(0, statement.find_first_not_of(" \t"));
+//		        statement.erase(statement.find_last_not_of(" \t") + 1);
+//		        if (statement.empty())
+//		            continue;
+//		        isKeyWord(statement);
+//		    }
+//		}
+//		/* std::stringstream ss(line);
+//		std::string statement;
+//		while (std::getline(ss, statement, ';')) {
+//		    statement.erase(0, statement.find_first_not_of(" \t"));
+//		    statement.erase(statement.find_last_not_of(" \t") + 1);
+//		
+//		    if (statement.empty())
+//		        continue;
+//		    if (statement.empty() || line.find(statement + ";") == std::string::npos) {
+//		        std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
+//		        throw std::exception();
+//		    }
+//		    isKeyWord(statement);
+//		} */
+//    }
+//	if (insideServerBlock == 1){
+//		std::cout << "Server or location close brackets (}) missing" << std::endl;
+//		throw std::exception();
+//	}
+//    file.close();
+//}
 //istream can read both files and strings
 
 
