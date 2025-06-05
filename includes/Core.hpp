@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <fstream>
+#include <fcntl.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -32,6 +33,7 @@ class Core
         fd_set                  _read_set;  // Separate read FD set
         fd_set                  _write_set; // Separate write FD set
         bool                    _client_connection;
+        int                     _fd_count;
     
     public:
         Core(); // Don't call default
@@ -44,7 +46,7 @@ class Core
         void    build_request(int client_fd);
         void    build_response(int client_fd);
         void    handle_write(int client_fd);
-        void    close_client(int fd);
+        void    close_client(const int fd);
         void    check_timeouts();
         void    client_multiplex();
         void    set_connection_state(bool state) {this->_client_connection = state;};

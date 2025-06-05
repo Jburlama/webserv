@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include <sys/select.h>
 
 Client::Client(int fd)
 :_fd(fd),_client_state(BUILD_REQUEST),_bytes_sent(0)
@@ -31,9 +32,9 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                     break;
                 case PATH:
                     this->_path = this->_parse_path(i, str);
+                    // TODO: Fix when the config file is added
+                    this->_path = "content/html/index.html";
                     this->_parser_state = VERSION;
-                    // TODO: Handdle Errors
-                    this->set_file("content/html/index.html"); // Open the fd for the file, dosn't read from it
                     break ;
                 case VERSION:
                     this->_request_version = this->_parse_request_version(i, str);
@@ -57,7 +58,6 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                     break ;
 
                 case END:
-                    this->set_client_state(BUILD_RESPONSE);
                     this->set_parser_state(START);
                     return ;
 
@@ -85,6 +85,8 @@ void Client::set_response()
     this->set_date();
     if (headers.find("Connection") != headers.end())
         this->set_connection(headers["Connection"][0]);
+    else
+        this->set_connection("keep-alive");
     if (this->get_method().compare("GET") == 0)
     {
         this->set_response_body(); // Reads and Closes the file fd
@@ -109,7 +111,7 @@ void Client::set_response_body()
         memset(this->_response_body, 0, this->_content_length);
         read(this->_file_fd, this->_response_body, this->_content_length);
         Log::close_file(this->_file_fd);
-        close(this->_file_fd);
+        close(this->_file_fd); // we remove from fd set in Core::build_response()
     }
 }
 
@@ -119,8 +121,10 @@ void Client::set_file(const char *file_path)
     file_fd = open(file_path, O_RDONLY); // Opens the file for read mode
     if (file_fd == -1)
         throw std::runtime_error("Client.cpp:120");
+
     Log::open_file(file_fd);
 
+    // the read_set is in Core class so the fd is added to the set in build_response
     this->_file_fd = file_fd;
 
     if (stat(file_path, &this->_file_stats) == -1) // Gest stats from the file

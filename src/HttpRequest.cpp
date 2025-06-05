@@ -170,6 +170,7 @@ std::string HttpRequest::_parse_path(int &i, const char *str)
 
     while (!std::isspace(str[i]))
         path += str[i++];
+
     return path;
 }
 

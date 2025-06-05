@@ -1,5 +1,4 @@
 #include "../includes/HttpResponse.hpp"
-#include <sys/types.h>
 
 HttpResponse::HttpResponse()
 : _version("HTTP/1.1"), _status_code(200), _description("OK"),
@@ -25,34 +24,6 @@ HttpResponse &HttpResponse::operator=(HttpResponse &other)
     return *this;
 }
 
-
-// NOTE: Function beeing rebuild in Client::set_request()
-HttpResponse::HttpResponse(HttpRequest &request)
-{
-    std::map<std::string, std::vector<std::string> > headers;
-    headers = request.get_request_headers();
-
-    this->set_version("HTTP/1.1");
-    this->set_server("webserv");
-    if (headers.find("Connection") != headers.end())
-        this->set_connection(headers["Connection"][0]);
-    this->set_date();
-    this->_content_length = 0;
-    this->set_content_type("text/html");
-    if (request.get_method().compare("GET") == 0)
-    {
-        this->set_status_code(200);
-        this->set_response_header();
-    }
-    else if (request.get_method().compare("POST") == 0)
-    {
-        this->set_status_code(201);
-        if (this->get_status_code() == 200)
-            this->set_response_header();
-        if (this->get_status_code() == 201)
-            this->set_response_header();
-    }
-}
 
 void HttpResponse::set_response_header()
 {

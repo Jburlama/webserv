@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <stdexcept>
 #include <unistd.h>
+#include <fcntl.h>
 
 class Server
 {

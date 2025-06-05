@@ -14,10 +14,11 @@
 #include "Log.hpp"
 
 enum e_ClientState {
-    BUILD_REQUEST = 1,
-    BUILD_RESPONSE = 2,
-    WRITING_HEADER = 3,
-    WRITING_BODY = 4,
+    BUILD_REQUEST  = 1,
+    READ_FILE      = 2,
+    BUILD_RESPONSE = 3,
+    WRITING_HEADER = 4,
+    WRITING_BODY   = 5,
 };
 
 class Client
@@ -46,11 +47,11 @@ public File
 
         void    set_resquest(const char *buffer, ssize_t bytes);
         void    set_response();
-        void    set_last_activity()                     {this->_last_activity = time(NULL);};
-        void    set_client_state(e_ClientState state)   {this->_client_state = state;};
-        void    set_response(HttpResponse response)     {this->_response = response;};
+        void    set_last_activity()                  {this->_last_activity = time(NULL);};
+        void    set_client_state(int state)          {this->_client_state = state;};
+        void    set_response(HttpResponse response)  {this->_response = response;};
         void    set_file(const char *path_name);
         void    set_response_body();
-        void    set_bytes_sent(ssize_t bytes)           {this->_bytes_sent = bytes;};
+        void    set_bytes_sent(ssize_t bytes)        {this->_bytes_sent = bytes;};
         void    reset();
 };

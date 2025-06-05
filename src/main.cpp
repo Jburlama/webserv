@@ -17,7 +17,7 @@ int main (int argc, char *argv[])
 	catch (std::runtime_error &e)
 	{
         perror(e.what());
-        exit(errno);
+        exit(STDERR_FILENO);
 	}
 	catch (std::logic_error &e)
 	{

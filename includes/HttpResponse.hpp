@@ -35,7 +35,6 @@ class HttpResponse
     public:
         HttpResponse();
         HttpResponse &operator=(HttpResponse &other);
-        HttpResponse(HttpRequest &request);
 
         std::string              get_response_header()  {return this->_response_header;};
         std::string              get_version()          {return this->_version;};
