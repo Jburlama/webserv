@@ -103,6 +103,7 @@ void Client::set_response_body()
 {
     this->_content_length = this->_file_stats.st_size;
 
+    std::cout << "Content length: " << this->_content_length << "\n";
     if (this->_content_length > 0)
     {
         this->_response_body = new char[this->_content_length];
@@ -118,6 +119,7 @@ void Client::set_response_body()
 void Client::set_file(const char *file_path)
 {
     int file_fd;
+    //TODO: Check if file exists and permitions
     file_fd = open(file_path, O_RDONLY); // Opens the file for read mode
     if (file_fd == -1)
         throw std::runtime_error("Client.cpp:120");

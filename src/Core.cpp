@@ -69,8 +69,9 @@ void Core::client_multiplex()
         write_set_copy = this->_write_set;
 
         if (select(this->_fd_count + 1, &read_set_copy, &write_set_copy, NULL, &tv) == -1)
-            throw std::runtime_error("Core.cpp:69\n");
+            throw std::runtime_error("Core.cpp:71\n");
         
+        // check servers
         for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
         {
             if (FD_ISSET(it->first, &read_set_copy)) // Check if fd is still present in the set
@@ -125,6 +126,7 @@ void Core::build_request(int client_fd)
     else if (bytes > 0)
     {
         Client  &client = this->_clients[client_fd];
+        int file_fd;
 
         Log::building_request(client_fd);
         client.set_resquest(buffer, bytes);
@@ -133,14 +135,14 @@ void Core::build_request(int client_fd)
         client.set_file(client.get_path().c_str());
         if (client.get_file_bytes() != 0) // File is not empty, if it was fd was alreay closed in set_file()
         {
-            int file_fd;
-
             // we add to the set here bc the read_set master is in the Core class
             file_fd = client.get_file_fd();
             FD_SET(file_fd, &this->_read_set); // add the file fd to read set
             ++this->_fd_count;
             Log::on_read(file_fd);
         }
+        else // File is empty so we build response right away, bc we dont need to read from file
+            this->build_response(client_fd);
         FD_CLR(client_fd, &this->_read_set);
     } 
 }
@@ -151,11 +153,14 @@ void Core::build_response(int client_fd)
 
     Log::building_response(client_fd);
     client.set_response(); // Reads and close the file descriptor if was not empty
-    --this->_fd_count; // remove file fd count
+    if (client.get_content_lenght() != 0)
+    {
+        FD_CLR(client.get_file_fd(), &this->_read_set); // rm file from read set
+        Log::rm_from_read(client.get_file_fd());
+        --this->_fd_count; // remove file fd count
+    }
     client.set_client_state(WRITING_HEADER); 
     client.set_last_activity();
-    FD_CLR(client.get_file_fd(), &this->_read_set); // rm file from read set
-    Log::rm_from_read(client.get_file_fd());
     FD_CLR(client_fd, &this->_read_set); // rm from read set
     Log::rm_from_read(client_fd);
     FD_SET(client_fd, &this->_write_set); // Add to write set
