@@ -103,7 +103,6 @@ void Client::set_response_body()
 {
     this->_content_length = this->_file_stats.st_size;
 
-    std::cout << "Content length: " << this->_content_length << "\n";
     if (this->_content_length > 0)
     {
         this->_response_body = new char[this->_content_length];

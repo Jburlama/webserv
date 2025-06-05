@@ -1,5 +1,4 @@
 #include "../includes/Core.hpp"
-#include <sys/select.h>
 
 Core::Core()
 {
