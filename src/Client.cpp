@@ -102,6 +102,15 @@ void Client::set_response()
             this->set_status_code(204);
         this->set_response_header();
     }
+    else if (this->get_method().compare("POST") == 0) // Doing the same has GET
+    {
+        this->set_response_body(); // Reads and Closes the file fd
+        if (this->_content_length != 0)
+            this->set_status_code(this->get_status());
+        else
+            this->set_status_code(204);
+        this->set_response_header();
+    }
     return ;
 }
 
@@ -126,7 +135,6 @@ void Client::set_file(const char *file_path)
     int file_fd;
     std::string file;
 
-    // TODO: check 403 Forbidden
     file = file_path;
     if (stat(file_path, &this->_file_stats) == -1) // Gest stats from the file
     {
@@ -138,21 +146,26 @@ void Client::set_file(const char *file_path)
                 throw std::runtime_error("Client.cpp:135");
         }
         else
-            throw std::runtime_error("Client.cpp:130"); // System fail callign stat()
+            throw std::runtime_error("Client.cpp:139"); // System fail callign stat()
     }
 
     if (S_ISDIR(this->_file_stats.st_mode)) // TODO: expand this if file_path is a dir
         std::cout << "This is a directory\n";
 
     file_fd = open(file.c_str(), O_RDONLY); // Opens the file for read mode
-    if (file_fd == -1)
-        throw std::runtime_error("Client.cpp:143");
+    if (file_fd == -1) // Don't have permition to open file
+    {
+        file = "content/html/error_pages/403_forbidden.html";
+        this->set_status(403);
+        if (stat(file.c_str(), &this->_file_stats) == -1) // Gest stats from the 403 file
+            throw std::runtime_error("Client.cpp:160");
+        file_fd = open(file.c_str(), O_RDONLY); // Opens the the custom 403 file for read mode
+        if (file_fd == -1)
+            throw std::runtime_error("Client.cpp:162");
+    }
 
+    this->_file_fd = file_fd; // the read_set is in Core class so the fd is added to the set in build_response
     Log::open_file(file_fd);
-
-    // the read_set is in Core class so the fd is added to the set in build_response
-    this->_file_fd = file_fd;
-
 
     this->_file_bytes = this->_file_stats.st_size;
     if (this->_file_bytes == 0) // empty file
@@ -160,5 +173,6 @@ void Client::set_file(const char *file_path)
         Log::close_file(file_fd);
         close(file_fd);
     }
+
     this->_file_path = file;
 }

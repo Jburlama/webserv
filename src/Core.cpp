@@ -211,7 +211,8 @@ void Core::handle_write(int client_fd)
                     Log::all_sent(client_fd);
                     if (client.get_connection().compare("close") == 0)
                         this->close_client(client_fd);
-                    delete [] client.get_response_body();
+                    if (client.get_response_body())
+                        delete [] client.get_response_body();
                     client.set_bytes_sent(0);
                     client.set_client_state(BUILD_REQUEST);
                     FD_CLR(client_fd, &this->_write_set);
