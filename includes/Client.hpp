@@ -32,6 +32,7 @@ public File
         int                     _client_state;
         ssize_t                 _bytes_sent;   // Send progress
         File                    _file; // File to build the response body
+        int                     _status;
 
     public:
         Client():_fd(-1),_last_activity(0),_client_state(BUILD_REQUEST),_bytes_sent(0) {};
@@ -44,7 +45,9 @@ public File
         int                 get_client_state()          {return this->_client_state;};
         ssize_t             get_bytes_sent()            {return this->_bytes_sent;};
         File                &get_files()                {return this->_file;};
+        int                 get_status()                {return this->_status;};
 
+        void    set_status(int status) {this->_status = status;};
         void    set_resquest(const char *buffer, ssize_t bytes);
         void    set_response();
         void    set_last_activity()                  {this->_last_activity = time(NULL);};

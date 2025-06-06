@@ -41,6 +41,9 @@ void HttpResponse::set_response_header()
         case 204:
             this->_response_header += "204 " + this->_description + "\r\n";
             break ;
+        case 400:
+            this->_response_header += "400 " + this->_description + "\r\n";
+            break ;
         case 404:
             this->_response_header += "404 " + this->_description + "\r\n";
         default:
@@ -77,6 +80,9 @@ void HttpResponse::set_status_code(int code)
             break ;
         case 204:
             this->_description = "No Content";
+            break ;
+        case 400:
+            this->_description = "Bad Request";
             break ;
         case 404:
             this->_description = "Not Found";

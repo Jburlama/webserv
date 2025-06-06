@@ -202,7 +202,7 @@ void Core::handle_write(int client_fd)
             bytes_sent = client.get_bytes_sent();
             bytes = send(client_fd, client.get_response_body() + bytes_sent, client.get_content_lenght() - bytes_sent, 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:197\n");
+                throw std::runtime_error("Core.cpp:209\n");
             else if (bytes > 0)
             {
                 bytes_sent = bytes + client.get_bytes_sent();

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>400 Bad Request - Invalid Request</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4ecfb 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .header {
+            background: linear-gradient(to right, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .error-code {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .explanation {
+            margin: 25px 0;
+        }
+        
+        .explanation h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+        
+        .explanation ul {
+            padding-left: 25px;
+            margin: 15px 0;
+        }
+        
+        .explanation li {
+            margin-bottom: 8px;
+        }
+        
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: #4e73df;
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: #2e59d9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .robot-icon {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 5rem;
+            color: #ff6b6b;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        
+        .shake {
+            animation: shake 0.8s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>400</h1>
+            <h2>Bad Request</h2>
+        </div>
+        
+        <div class="content">
+            <div class="robot-icon" id="robot">
+                🤖
+            </div>
+            
+            <div class="error-code">
+                HTTP Error 400 - The request could not be understood by the server due to malformed syntax.
+            </div>
+            
+            <div class="explanation">
+                <h3>What happened?</h3>
+                <p>Your browser sent a request that this server could not understand. This might be caused by:</p>
+                <ul>
+                    <li>Invalid syntax in the URL or request parameters</li>
+                    <li>A corrupted or oversized cookie</li>
+                    <li>Browser extensions modifying requests</li>
+                    <li>Uploading an unsupported file format</li>
+                    <li>Network issues causing corrupted data transmission</li>
+                </ul>
+                <p>Don't worry - this is usually a temporary issue and can often be fixed by refreshing the page or checking your input.</p>
+            </div>
+            
+            <div class="actions">
+                <a href="javascript:location.reload();" class="btn btn-primary">Refresh Page</a>
+                <a href="/" class="btn btn-secondary">Go to Homepage</a>
+                <a href="javascript:history.back();" class="btn btn-secondary">Go Back</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Need further assistance? Contact our support team at support@example.com</p>
+            <p>&copy; 2023 Your Website. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // Add animation to the robot when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const robot = document.getElementById('robot');
+            setTimeout(() => {
+                robot.classList.add('shake');
+            }, 800);
+            
+            // Remove animation class after it completes so it can be reapplied
+            robot.addEventListener('animationend', () => {
+                robot.classList.remove('shake');
+            });
+            
+            // Make the robot shake when clicked for fun
+            robot.addEventListener('click', () => {
+                robot.classList.add('shake');
+            });
+        });
+    </script>
+</body>
+</html>

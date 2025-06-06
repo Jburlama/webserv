@@ -21,9 +21,9 @@ Server::Server(int port)
 
     this->_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (setsockopt(this->_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) // Re-use socket if is already in use
-        throw std::runtime_error("Server.cpp:14\n");
+        throw std::runtime_error("Server.cpp:23\n");
     if (bind(this->_fd, (const struct sockaddr *)&this->_addr, sizeof(this->_addr)) != 0)
-        throw std::runtime_error("Server.cpp:17\n");
+        throw std::runtime_error("Server.cpp:25\n");
     if (listen(this->_fd, SOMAXCONN) != 0)
-        throw std::runtime_error("Server.cpp:18\n");
+        throw std::runtime_error("Server.cpp:28\n");
 }

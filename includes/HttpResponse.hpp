@@ -21,16 +21,16 @@
 class HttpResponse
 {
     protected:
-        std::string                                         _response_header; // all the Header
-        std::string                                         _version; // HTTP/1.1
-        int                                                 _status_code; 
-        std::string                                         _description; // status code desc
-        std::string                                         _date;
-        std::vector<std::string>                            _content_type; // e.g text/html
-        size_t                                              _content_length; // the exact byte count of the body
-        std::string                                         _server; // software name (webserv)
-        std::string                                         _connection;
-        char                                                *_response_body; // page content in binary form
+        std::string              _response_header; // all the Header
+        std::string              _version; // HTTP/1.1
+        int                      _status_code; 
+        std::string              _description; // status code desc
+        std::string              _date;
+        std::vector<std::string> _content_type; // e.g text/html
+        size_t                   _content_length; // the exact byte count of the body
+        std::string              _server; // software name (webserv)
+        std::string              _connection;
+        char                     *_response_body; // page content in binary form
     
     public:
         HttpResponse();
