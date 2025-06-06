@@ -8,7 +8,7 @@ Core::Core()
 // Inicialize the servers by adding to the servers map
 // Each server is accessible by its file descriptor
 Core::Core(std::vector<int> ports)
-:_timeout(5),_client_connection(false) // Connetion timeout 75 seconds
+:_timeout(75),_client_connection(false) // Connetion timeout 75 seconds
 {   
     this->_biggest_fd = 2;
     FD_ZERO(&this->_read_set);
@@ -133,7 +133,6 @@ void Core::build_request(int client_fd)
         Log::building_request(client_fd);
         client.set_resquest(buffer, bytes);
         client.set_client_state(BUILD_RESPONSE);
-        std::cout << client.get_request_version() << "\n";
         client.set_last_activity();
         client.set_file(client.get_path().c_str());
         if (client.get_file_bytes() != 0) // File is not empty, if it was fd was alreay closed in set_file()

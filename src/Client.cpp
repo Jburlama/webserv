@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include <stdexcept>
 #include <sys/select.h>
 
 Client::Client(int fd)
@@ -93,7 +94,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
             this->set_parser_state(START);
         }
         else
-            throw std::runtime_error("HttpResponse.cpp:set_request()");
+            std::cout << error_msg << "\n";
     }
 }
 

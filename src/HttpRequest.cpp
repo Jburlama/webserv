@@ -135,7 +135,7 @@ std::string HttpRequest::_parse_request_version(int &i, const char *str)
             throw std::logic_error("VERSION");
         version += str[i++];
     }
-    if ((str[i] - '0') <= 2)
+    if ((str[i] - '0') < 2)
         version += str[i++];
     else
         throw std::logic_error("VERSION");
@@ -143,7 +143,7 @@ std::string HttpRequest::_parse_request_version(int &i, const char *str)
         version += str[i++];
     else
         throw std::logic_error("VERSION");
-    if ((str[i] - '0') <= 2)
+    if ((str[i] - '0') < 2)
         version += str[i++];
     else
         throw std::logic_error("VERSION");
