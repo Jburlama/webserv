@@ -33,7 +33,7 @@ class Core
         fd_set                  _read_set;  // Separate read FD set
         fd_set                  _write_set; // Separate write FD set
         bool                    _client_connection;
-        int                     _fd_count;
+        int                     _biggest_fd;
     
     public:
         Core(); // Don't call default
@@ -47,7 +47,7 @@ class Core
         void    build_response(int client_fd);
         void    handle_write(int client_fd);
         void    close_client(const int fd);
-        void    check_timeouts();
+        bool    check_timeouts(int fd);
         void    client_multiplex();
         void    set_connection_state(bool state) {this->_client_connection = state;};
 };

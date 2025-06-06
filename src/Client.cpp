@@ -7,6 +7,10 @@ Client::Client(int fd)
     this->set_last_activity();
 }
 
+Client::~Client()
+{
+}
+
 void    Client::set_resquest(const char *buffer, ssize_t bytes)
 {
     try
@@ -71,11 +75,25 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
             }
         }
     }
-    catch (const std::exception& e)
+    catch (const std::logic_error& e)
     {
-        this->_path = "content/html/error_pages/400_bad_request.html";
-        this->_status = 400;
-        this->set_parser_state(START);
+        std::string error_msg;
+
+        error_msg = e.what();
+        if (error_msg.compare("PATH") == 0)
+        {
+            this->_path = "content/html/error_pages/400_bad_request.html";
+            this->_status = 400;
+            this->set_parser_state(START);
+        }
+        else if (error_msg.compare("VERSION") == 0) 
+        {
+            this->_path = "content/html/error_pages/505_HTTP_Version_Not_Supported.html";
+            this->_status = 505;
+            this->set_parser_state(START);
+        }
+        else
+            throw std::runtime_error("HttpResponse.cpp:set_request()");
     }
 }
 
@@ -114,6 +132,7 @@ void Client::set_response()
     return ;
 }
 
+// We close the file in Core::build_request, to also remove from fd_set
 void Client::set_response_body()
 {
     this->_content_length = this->_file_stats.st_size;
@@ -125,8 +144,6 @@ void Client::set_response_body()
             throw std::runtime_error("HttpResponse.cpp:167");
         memset(this->_response_body, 0, this->_content_length);
         read(this->_file_fd, this->_response_body, this->_content_length);
-        Log::close_file(this->_file_fd);
-        close(this->_file_fd); // we remove from fd set in Core::build_response()
     }
 }
 

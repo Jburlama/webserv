@@ -8,9 +8,9 @@ Core::Core()
 // Inicialize the servers by adding to the servers map
 // Each server is accessible by its file descriptor
 Core::Core(std::vector<int> ports)
-:_timeout(75),_client_connection(false) // Connetion timeout 75 seconds
+:_timeout(5),_client_connection(false) // Connetion timeout 75 seconds
 {   
-    this->_fd_count = 2;
+    this->_biggest_fd = 2;
     FD_ZERO(&this->_read_set);
     FD_ZERO(&this->_write_set);
     for (std::vector<int>::iterator it = ports.begin(); it != ports.end(); ++it)
@@ -20,7 +20,8 @@ Core::Core(std::vector<int> ports)
         Log::server_start(server.get_fd(), *it);
         this->_servers.insert(std::make_pair(server.get_fd(), server));
         FD_SET(server.get_fd(), &this->_read_set); // Add server fd to the read set
-        ++this->_fd_count;
+        if (server.get_fd() > this->_biggest_fd)
+            this->_biggest_fd = server.get_fd();
     }
 }
 
@@ -38,14 +39,15 @@ void Core::get_client(int server_fd)
     {
         client_fd = accept(server_fd, (struct sockaddr *)&(serv_it->second.get_addr()), &addr_len);
         if (client_fd == -1)
-        	throw std::runtime_error("Core.cpp:40\n");
+        	throw std::runtime_error("Core.cpp:39");
         else if (client_fd >= 0)
         {
             this->_clients.insert(std::make_pair(client_fd, Client(client_fd)));
             Log::server_accept_client(server_fd, client_fd);
-            Log::on_read(client_fd);
             FD_SET(client_fd, &this->_read_set); // add the client to read set
-            ++this->_fd_count;
+            if (client_fd > this->_biggest_fd)
+                this->_biggest_fd = client_fd;
+            Log::on_read(client_fd);
         }
     }
 }
@@ -57,18 +59,19 @@ void Core::client_multiplex()
     fd_set          read_set_copy;
     fd_set          write_set_copy;
     struct timeval  tv;
-    //  sec timeout, so that select doesn't block;
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
 
     while (42)
     {
+        //  sec timeout, so that select doesn't block;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
         // Copy because select is destructive and will change the sets
         read_set_copy  = this->_read_set;
         write_set_copy = this->_write_set;
 
-        if (select(this->_fd_count + 1, &read_set_copy, &write_set_copy, NULL, &tv) == -1)
-            throw std::runtime_error("Core.cpp:71\n");
+        if (select(this->_biggest_fd + 1, &read_set_copy, &write_set_copy, NULL, &tv) == -1)
+            throw std::runtime_error("Core.cpp:71");
         
         // check servers
         for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
@@ -102,9 +105,9 @@ void Core::client_multiplex()
             }
             if (FD_ISSET(it->first, &write_set_copy)) // Check if client is in write set
                 this->handle_write(it->first); // Call send().
+            if (this->check_timeouts(it->first)) // Close a client connection if timeout as exceeded
+                break ;
         }
-        // Close a client connection if timeout as exceeded
-        this->check_timeouts();
     }
 }
 
@@ -130,6 +133,7 @@ void Core::build_request(int client_fd)
         Log::building_request(client_fd);
         client.set_resquest(buffer, bytes);
         client.set_client_state(BUILD_RESPONSE);
+        std::cout << client.get_request_version() << "\n";
         client.set_last_activity();
         client.set_file(client.get_path().c_str());
         if (client.get_file_bytes() != 0) // File is not empty, if it was fd was alreay closed in set_file()
@@ -137,7 +141,8 @@ void Core::build_request(int client_fd)
             // we add to the set here bc the read_set master is in the Core class
             file_fd = client.get_file_fd();
             FD_SET(file_fd, &this->_read_set); // add the file fd to read set
-            ++this->_fd_count;
+            if (file_fd > this->_biggest_fd)
+                this->_biggest_fd = file_fd;
             Log::on_read(file_fd);
         }
         else // File is empty so we build response right away, bc we dont need to read from file
@@ -156,7 +161,15 @@ void Core::build_response(int client_fd)
     {
         FD_CLR(client.get_file_fd(), &this->_read_set); // rm file from read set
         Log::rm_from_read(client.get_file_fd());
-        --this->_fd_count; // remove file fd count
+        if (client.get_file_fd() == this->_biggest_fd)
+            --this->_biggest_fd; // remove file fd 
+        Log::close_file(client.get_file_fd());
+        if (client.get_file_fd() != -1)
+        {
+            if (close(client.get_file_fd()) == -1)
+                throw std::runtime_error("Core.cpp:169");
+        }
+        client.set_closed_file_fd(); // Set file fd to -1
     }
     client.set_client_state(WRITING_HEADER); 
     client.set_last_activity();
@@ -179,7 +192,7 @@ void Core::handle_write(int client_fd)
             Log::sending_header(client_fd);
             bytes = send(client_fd, &client.get_response_header()[0], client.get_response_header().length(), 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:174\n");
+                return ;
             client.set_client_state(WRITING_BODY);
             break ;
 
@@ -202,7 +215,7 @@ void Core::handle_write(int client_fd)
             bytes_sent = client.get_bytes_sent();
             bytes = send(client_fd, client.get_response_body() + bytes_sent, client.get_content_lenght() - bytes_sent, 0);
             if (bytes == -1)
-                throw std::runtime_error("Core.cpp:209\n");
+                return ;
             else if (bytes > 0)
             {
                 bytes_sent = bytes + client.get_bytes_sent();
@@ -244,26 +257,29 @@ void Core::close_client(const int fd)
         FD_CLR(fd, &this->_write_set);
         Log::rm_from_write(fd);
     }
-    this->_clients.erase(fd);
-    close(fd);
-    --this->_fd_count;
     Log::connetion_close(fd);
+    if (fd != -1)
+    {
+        if (close(fd) == -1)
+            throw std::runtime_error("Core.cpp:250");
+    }
+    //this->_clients[fd].set_closed_fd();
+    this->_clients.erase(fd);
+    if (fd == this->_biggest_fd)
+        --_biggest_fd;
 }
 
 
 // Check the last activity from the client and close the connection if a timeout has exceeded
-void Core::check_timeouts()
+bool Core::check_timeouts(int fd)
 {
-    time_t              now;
+    Client &client = this->_clients[fd];
     
-    now = time(0);
-    for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
+    if (time(NULL) - client.get_last_activity() > this->_timeout)
     {
-        if (now - it->second.get_last_activity() > this->_timeout)
-        {
-            Log::timeout(it->first);
-            close_client(it->first);
-            return ;
-        }
+        Log::timeout(fd);
+        close_client(fd);
+        return true;
     }
+    return false;
 }

@@ -127,24 +127,28 @@ std::string HttpRequest::_parse_request_version(int &i, const char *str)
     std::string version_start = "HTTP/";
     std::string version;
     if (std::isspace(str[i]))
-        throw std::logic_error("Error at status line: Can only have one SP between Method and URI");
+        throw std::logic_error("VERSION");
 
     for (int j = 0; version_start[j]; ++j)
+    {
+        if (version_start[j] != str[i])
+            throw std::logic_error("VERSION");
         version += str[i++];
+    }
     if ((str[i] - '0') <= 2)
         version += str[i++];
     else
-        throw std::logic_error("Error at status line version");
+        throw std::logic_error("VERSION");
     if (str[i] == '.')
         version += str[i++];
     else
-        throw std::logic_error("Error at status line version");
+        throw std::logic_error("VERSION");
     if ((str[i] - '0') <= 2)
         version += str[i++];
     else
-        throw std::logic_error("Error at status line version");
+        throw std::logic_error("VERSION");
     if (!str[i])
-        throw std::logic_error("Error at status line: Cant end the status line with nul");
+        throw std::logic_error("VERSION");
     else if (str[i] == CR && str[i + 1] == LF)
     {
         i += 2;
@@ -158,7 +162,7 @@ std::string HttpRequest::_parse_request_version(int &i, const char *str)
     else
     {
         return NULL;
-        throw std::logic_error("Error at the end of status line");
+        throw std::logic_error("VERSION");
     }
 }
 
@@ -166,7 +170,7 @@ std::string HttpRequest::_parse_path(int &i, const char *str)
 {
     std::string path;
     if (std::isspace(str[i]))
-        throw std::logic_error("Error at status line: Can only have one SP between Method and URI");
+        throw std::logic_error("PATH");
 
     while (!std::isspace(str[i]))
         path += str[i++];

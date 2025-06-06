@@ -31,20 +31,18 @@ public File
         HttpResponse            _response;
         int                     _client_state;
         ssize_t                 _bytes_sent;   // Send progress
-        File                    _file; // File to build the response body
         int                     _status;
 
     public:
         Client():_fd(-1),_last_activity(0),_client_state(BUILD_REQUEST),_bytes_sent(0) {};
         Client(int fd);
-        ~Client() {};
+        ~Client();
 
         int                 get_fd()              const {return this->_fd;};
         time_t              get_last_activity()         {return this->_last_activity;};
         HttpResponse        &get_response()             {return this->_response;};
         int                 get_client_state()          {return this->_client_state;};
         ssize_t             get_bytes_sent()            {return this->_bytes_sent;};
-        File                &get_files()                {return this->_file;};
         int                 get_status()                {return this->_status;};
 
         void    set_status(int status) {this->_status = status;};
@@ -56,5 +54,6 @@ public File
         void    set_file(const char *path_name);
         void    set_response_body();
         void    set_bytes_sent(ssize_t bytes)        {this->_bytes_sent = bytes;};
-        void    reset();
+        void    set_closed_fd()      {this->_fd = -1;};
+        void    set_closed_file_fd() {this->_file_fd = -1;};
 };

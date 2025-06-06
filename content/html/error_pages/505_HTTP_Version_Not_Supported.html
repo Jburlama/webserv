@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Version Not Supported | Error 505</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        .background-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .protocol-box {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            animation: float 15s infinite linear;
+            backdrop-filter: blur(2px);
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100vw) rotate(360deg);
+            }
+        }
+        
+        .container {
+            max-width: 850px;
+            width: 100%;
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 5px 15px rgba(58, 123, 213, 0.2);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #e6f7ff;
+        }
+        
+        .message {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #d1e8ff;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .protocol-info {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 30px 0;
+            border-left: 3px solid #3a7bd5;
+        }
+        
+        .protocol-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #00d2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .protocol-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .protocol-item {
+            background: rgba(58, 123, 213, 0.15);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(58, 123, 213, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .protocol-item.supported {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: rgba(0, 210, 255, 0.3);
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            color: #fff;
+            box-shadow: 0 5px 15px rgba(58, 123, 213, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #00d2ff;
+            border: 2px solid rgba(0, 210, 255, 0.5);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(58, 123, 213, 0.4);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 210, 255, 0.1);
+        }
+        
+        .connection-icon {
+            font-size: 100px;
+            margin-bottom: 30px;
+            color: #3a7bd5;
+            filter: drop-shadow(0 5px 15px rgba(58, 123, 213, 0.3));
+        }
+        
+        .technical-details {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 40px;
+            text-align: left;
+        }
+        
+        .technical-details h3 {
+            color: #00d2ff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .technical-details ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .technical-details li {
+            margin-bottom: 12px;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.5;
+        }
+        
+        .technical-details li:before {
+            content: "•";
+            color: #3a7bd5;
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .server-info {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #a0d0ff;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 600px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .message {
+                font-size: 1rem;
+            }
+            
+            .actions {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .protocol-list {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-elements" id="protocolElements"></div>
+    
+    <div class="container">
+        <div class="connection-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+        </div>
+        <div class="error-code">505</div>
+        <h1>HTTP Version Not Supported</h1>
+        <p class="message">
+            The server does not support the HTTP protocol version used in your request.
+            This is typically caused by an outdated client or an unsupported protocol version.
+        </p>
+        
+        <div class="protocol-info">
+            <div class="protocol-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Supported Protocol Versions
+            </div>
+            <div class="protocol-list">
+                <div class="protocol-item supported">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 11 12 14 22 4"></polyline>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    HTTP/1.1
+                </div>
+                <div class="protocol-item supported">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 11 12 14 22 4"></polyline>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    HTTP/1.0
+                </div>
+                <div class="protocol-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    HTTP/2.0
+                </div>
+                <div class="protocol-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    HTTP/3.0
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="/" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Go to Homepage
+            </a>
+            <a href="#" id="updateClient" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Update Client
+            </a>
+        </div>
+        
+        <div class="technical-details">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Technical Information
+            </h3>
+            <ul>
+                <li>Error Code: 505 (HTTP Version Not Supported)</li>
+                <li>This server only supports HTTP/1.x protocol versions</li>
+                <li>Check your client software for updates</li>
+                <li>Ensure you're not using experimental or deprecated protocols</li>
+                <li>For developers: Verify the HTTP version in request headers</li>
+            </ul>
+        </div>
+        
+        <div class="server-info">
+            Server: WebServer/2.0 | Generated at: <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <script>
+        // Add floating protocol elements in the background
+        function createProtocolElements() {
+            const container = document.getElementById('protocolElements');
+            const protocols = ['HTTP/1.1', 'HTTP/2', 'HTTPS', 'TCP', 'TLS', 'SSL', 'WebSocket', 'HTTP/1.0', 'HTTP/3', 'QUIC'];
+            
+            for (let i = 0; i < 15; i++) {
+                const element = document.createElement('div');
+                element.className = 'protocol-box';
+                element.textContent = protocols[Math.floor(Math.random() * protocols.length)];
+                
+                // Random position and animation
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const delay = Math.random() * 15;
+                const duration = 15 + Math.random() * 30;
+                
+                element.style.left = `${left}%`;
+                element.style.top = `${top}%`;
+                element.style.animation = `float ${duration}s ${delay}s infinite linear`;
+                
+                container.appendChild(element);
+            }
+        }
+        
+        // Add timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timestamp = document.getElementById('timestamp');
+            timestamp.textContent = now.toLocaleString();
+        }
+        
+        // Update client button
+        document.getElementById('updateClient').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert("Please update your browser or client software to the latest version.\nYou can visit your browser's official website to download updates.");
+        });
+        
+        // Animate error code on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorCode = document.querySelector('.error-code');
+            
+            setTimeout(() => {
+                errorCode.style.transition = 'transform 0.5s ease';
+                errorCode.style.transform = 'scale(1.05)';
+                
+                setTimeout(() => {
+                    errorCode.style.transform = 'scale(1)';
+                }, 500);
+            }, 300);
+            
+            createProtocolElements();
+            updateTimestamp();
+        });
+    </script>
+</body>
+</html>
