@@ -1,5 +1,4 @@
 #include "../includes/HttpRequest.hpp"
-#include <sys/types.h>
 
 std::string g_methods[] = {
     "GET",
@@ -14,14 +13,11 @@ HttpRequest &HttpRequest::operator=(HttpRequest &other)
     this->_path = other.get_path();
     this->_request_version = other.get_request_version();
     this->_request_headers = other.get_request_headers();
-    //this->_request_body = other.get_request_body();
+    this->_request_body = other.get_request_body();
     return *this;
 }
 
-    // "multipart/form-data";
-//------geckoformboundary4ea4b54d72f9e8748e9fe720d148cfd
-//Content-Disposition: form-data; name="file"; filename="The-Amazing-Power-of-Self-Discipline_-Miyamoto-Musashi.webp"
-//Content-Type: image/webp
+
 void HttpRequest::_parse_request_body()
 {
     std::string content_type;
@@ -58,6 +54,8 @@ void HttpRequest::_parse_request_body()
         filename = str.substr(filename_poss, filename_end - filename_poss);
         if (filename.empty())
             return ;
+        filename = "upload/" + filename;
+        this->_location = filename;
 
         header_end = str.find("\r\n\r\n", filename_end);
         if (header_end == std::string::npos)
@@ -66,13 +64,13 @@ void HttpRequest::_parse_request_body()
         file_start = header_end + 4;  // Skip \r\n\r\n
         file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
 
-        //// Write to file
-        std::ofstream out_file(filename.c_str(), std::ios::binary);
-        if (!out_file)
-            throw std::runtime_error("Failed to create file: " + filename);
+        // Write to file
+         std::ofstream out_file(filename.c_str(), std::ios::binary);
+         if (!out_file)
+             throw std::runtime_error("Failed to create file: " + filename);
         
-        out_file.write(&this->_request_body[file_start], file_end);
-        out_file.close();
+         out_file.write(&this->_request_body[file_start], file_end);
+         out_file.close();
     }
 }
 

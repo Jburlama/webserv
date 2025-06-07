@@ -1,8 +1,4 @@
 #include "../includes/Client.hpp"
-#include <cstddef>
-#include <iterator>
-#include <stdexcept>
-#include <sys/select.h>
 
 Client::Client(int fd)
 :_fd(fd),_client_state(BUILD_REQUEST),_bytes_sent(0),_status(0)
@@ -69,7 +65,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                     if (this->_request_headers.find("Content-Length") != this->_request_headers.end())
                         body_size = std::atoi(this->_request_headers["Content-Length"][0].c_str());
                     else if (this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
-                        std::cout << "Transfer-Enconding\n"; // TODO: handdle Transfer-Enconding
+                        std::cout << "Transfer-Enconding\n";
 
                     while(i < bytes)
                         this->_request_body.insert(this->_request_body.end(), buffer[i++]);
@@ -83,7 +79,13 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                     else
                     {
                         this->_parse_request_body();
+                        this->set_status(201);
                         this->_parser_state = END;
+                        this->set_parser_state(START);
+                        this->set_has_body(true);
+                        this->set_upload_length(body_size);
+                        this->_request_body.clear();
+                        return ;
                     }
 
                     this->set_has_body(true);
@@ -131,28 +133,18 @@ void Client::set_response()
     this->set_version("HTTP/1.1");
     this->set_server("webserv");
     this->set_date();
+    if (!this->get_location().empty())
+        this->set_response_location(this->get_location());
     if (headers.find("Connection") != headers.end())
         this->set_connection(headers["Connection"][0]);
     else
         this->set_connection("keep-alive");
-    if (this->get_method().compare("GET") == 0 || this->get_status() == 400)
-    {
-        this->set_response_body(); // Reads and Closes the file fd
-        if (this->_content_length != 0)
-            this->set_status_code(this->get_status());
-        else
-            this->set_status_code(204);
-        this->set_response_header();
-    }
-    else if (this->get_method().compare("POST") == 0) // Doing the same has GET
-    {
-        this->set_response_body(); // Reads and Closes the file fd
-        if (this->_content_length != 0)
-            this->set_status_code(this->get_status());
-        else
-            this->set_status_code(204);
-        this->set_response_header();
-    }
+    this->set_response_body(); // Reads and Closes the file fd
+    if (this->_content_length != 0)
+        this->set_status_code(this->get_status());
+    else
+        this->set_status_code(204);
+    this->set_response_header();
     return ;
 }
 

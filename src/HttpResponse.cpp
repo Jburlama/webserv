@@ -2,7 +2,7 @@
 
 HttpResponse::HttpResponse()
 : _version("HTTP/1.1"), _status_code(200), _description("OK"),
-_content_length(0), _server("webserv"), _response_body(NULL)
+_content_length(0), _upload_length(0), _server("webserv"), _response_body(NULL)
 {
     set_date();
 }
@@ -70,6 +70,8 @@ void HttpResponse::set_response_header()
         stream << this->_content_length;
         this->_response_header += "Content-Length: " + stream.str() + "\r\n";
     }
+    if (!this->_response_location.empty())
+        this->_response_header += "Location: " + this->_response_location + "\r\n";
     this->_response_header += "Connection: " + this->_connection + "\r\n";
     this->_response_header += "\r\n";
 }
