@@ -30,7 +30,9 @@ class HttpRequest
         std::string                                         _path;
         std::string                                         _request_version;
         std::map<std::string, std::vector<std::string> >    _request_headers;
-        const char                                          *_request_body;
+        std::vector<char>                                   _request_body;
+        bool                                                _has_body;
+        size_t                                              _bytes_read;
 
         std::string                                         _parse_method(int &i, const char *str);
         std::string                                         _parse_path(int &i, const char *str);
@@ -39,7 +41,7 @@ class HttpRequest
         void                                                _parse_request_body();
 
     public:
-        HttpRequest():_parser_state(START) {};
+        HttpRequest():_parser_state(START),_has_body(false) {};
         HttpRequest &operator=(HttpRequest &other);
 
         int                                                 get_parser_state() {return this->_parser_state;};
@@ -47,9 +49,13 @@ class HttpRequest
         std::string                                         get_path() {return this->_path;};
         std::string                                         get_request_version() {return this->_request_version;};
         std::map<std::string, std::vector<std::string> >    get_request_headers() {return this->_request_headers;};
-        const char                                          *get_request_body() {return this->_request_body;};
+        std::vector<char>                                   &get_request_body() {return this->_request_body;};
+        bool                                                get_has_body() {return this->_has_body;};
+        size_t                                              get_bytes_read() {return this->_bytes_read;};
 
         void    set_parser_state(int state) {this->_parser_state = state;};
+        void    set_has_body(bool has) {this->_has_body = has;};
+        void    set_bytes_read(size_t bytes) {this->_bytes_read = bytes;};
 };
 
 std::ostream &operator<<(std::ostream &os, HttpRequest &request);

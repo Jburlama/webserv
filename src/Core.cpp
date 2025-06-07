@@ -130,11 +130,17 @@ void Core::build_request(int client_fd)
         Client  &client = this->_clients[client_fd];
         int file_fd;
 
+        client.set_last_activity();
         Log::building_request(client_fd);
         client.set_resquest(buffer, bytes);
-        client.set_client_state(BUILD_RESPONSE);
-        client.set_last_activity();
-        client.set_file(client.get_path().c_str());
+        if (client.get_parser_state() == BODY) // body not all setn
+        {
+            client.set_client_state(BUILD_REQUEST);
+            return ;
+        }
+        else
+            client.set_client_state(BUILD_RESPONSE);
+        client.set_file(client.get_path().c_str()); // For response body
         if (client.get_file_bytes() != 0) // File is not empty, if it was fd was alreay closed in set_file()
         {
             // we add to the set here bc the read_set master is in the Core class

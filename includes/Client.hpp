@@ -28,7 +28,6 @@ public File
     private:
         int                     _fd;
         time_t                  _last_activity;  // Track last I/O activity
-        HttpResponse            _response;
         int                     _client_state;
         ssize_t                 _bytes_sent;   // Send progress
         int                     _status;
@@ -40,7 +39,6 @@ public File
 
         int                 get_fd()              const {return this->_fd;};
         time_t              get_last_activity()         {return this->_last_activity;};
-        HttpResponse        &get_response()             {return this->_response;};
         int                 get_client_state()          {return this->_client_state;};
         ssize_t             get_bytes_sent()            {return this->_bytes_sent;};
         int                 get_status()                {return this->_status;};
@@ -50,7 +48,6 @@ public File
         void    set_response();
         void    set_last_activity()                  {this->_last_activity = time(NULL);};
         void    set_client_state(int state)          {this->_client_state = state;};
-        void    set_response(HttpResponse response)  {this->_response = response;};
         void    set_file(const char *path_name);
         void    set_response_body();
         void    set_bytes_sent(ssize_t bytes)        {this->_bytes_sent = bytes;};

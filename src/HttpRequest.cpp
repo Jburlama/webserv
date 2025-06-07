@@ -14,7 +14,7 @@ HttpRequest &HttpRequest::operator=(HttpRequest &other)
     this->_path = other.get_path();
     this->_request_version = other.get_request_version();
     this->_request_headers = other.get_request_headers();
-    this->_request_body = other.get_request_body();
+    //this->_request_body = other.get_request_body();
     return *this;
 }
 

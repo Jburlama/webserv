@@ -1,4 +1,6 @@
 #include "../includes/Client.hpp"
+#include <cstddef>
+#include <iterator>
 #include <stdexcept>
 #include <sys/select.h>
 
@@ -23,6 +25,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
             switch (this->_parser_state)
             {
                 case START:  // skips empty line, and check if method start at the beguining of the line
+                    this->set_has_body(false);
                     while (std::isspace(str[i]))
                         ++i;
                     if ((i == 0 && (str[i] == 'G' || str[i] == 'P' || str[i] == 'D'))
@@ -56,14 +59,34 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                         this->_parser_state = BODY;
                     else
                         this->_parser_state = END;
+                    this->set_bytes_read(i);
                     break ;
 
                 case BODY:
-                    // TODO: Parse Body when Client sends a POST
-                    // Have to be able to deal with bynayy buffer
-                    // the reqeust method has Content-Lenght or Transfer-Encoding
-                    this->_request_body = buffer + i;
-                    this->_parser_state = END;
+                    size_t body_size;
+
+                    body_size = 0;
+                    if (this->_request_headers.find("Content-Length") != this->_request_headers.end())
+                        body_size = std::atoi(this->_request_headers["Content-Length"][0].c_str());
+                    else if (this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
+                        std::cout << "Transfer-Enconding\n"; // TODO: handdle Transfer-Enconding
+
+                    while(i < bytes)
+                        this->_request_body.insert(this->_request_body.end(), buffer[i++]);
+
+                    this->set_bytes_read(i + this->get_bytes_read());
+                    if (this->get_bytes_read() < body_size)
+                    {
+                        this->_parser_state = BODY;
+                        return ;
+                    }
+                    else
+                    {
+                        this->_parse_request_body();
+                        this->_parser_state = END;
+                    }
+
+                    this->set_has_body(true);
                     break ;
 
                 case END:
@@ -148,6 +171,7 @@ void Client::set_response_body()
     }
 }
 
+// Open file for Response body
 void Client::set_file(const char *file_path)
 {
     int file_fd;
