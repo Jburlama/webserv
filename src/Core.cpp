@@ -7,21 +7,20 @@ Core::Core()
 
 // Inicialize the servers by adding to the servers map
 // Each server is accessible by its file descriptor
-Core::Core(std::vector<int> ports)
+Core::Core(std::vector<ServerBlock> server_blocks)
 :_timeout(75),_client_connection(false) // Connetion timeout 75 seconds
 {   
     this->_biggest_fd = 2;
     FD_ZERO(&this->_read_set);
     FD_ZERO(&this->_write_set);
-    for (std::vector<int>::iterator it = ports.begin(); it != ports.end(); ++it)
-    {
-        Server server(*it);
 
-        Log::server_start(server.get_fd(), *it);
-        this->_servers.insert(std::make_pair(server.get_fd(), server));
-        FD_SET(server.get_fd(), &this->_read_set); // Add server fd to the read set
-        if (server.get_fd() > this->_biggest_fd)
-            this->_biggest_fd = server.get_fd();
+    for (std::vector<ServerBlock>::iterator it = server_blocks.begin(); it != server_blocks.end(); ++it)
+    {
+        Log::server_start(it->fd, std::atoi(it->listen.c_str()));
+        this->_servers.insert(std::make_pair(it->fd, *it));
+        FD_SET(it->fd, &this->_read_set); // Add server fd to the read set
+        if (it->fd > this->_biggest_fd)
+            this->_biggest_fd = it->fd;
     }
 }
 
@@ -29,20 +28,20 @@ Core::Core(std::vector<int> ports)
 // Accepts client connection to the given server
 void Core::get_client(int server_fd)
 {
-    socklen_t                       addr_len;
-    int                             client_fd;
-    std::map<int, Server>::iterator serv_it;
+    socklen_t                            addr_len;
+    int                                  client_fd;
+    std::map<int, ServerBlock>::iterator serv_it;
 
     addr_len = sizeof(struct sockaddr_in);
     serv_it = this->_servers.find(server_fd);
     if (serv_it != this->_servers.end())
     {
-        client_fd = accept(server_fd, (struct sockaddr *)&(serv_it->second.get_addr()), &addr_len);
+        client_fd = accept(server_fd, (struct sockaddr *)&(serv_it->second.addr), &addr_len);
         if (client_fd == -1)
         	throw std::runtime_error("Core.cpp:39");
         else if (client_fd >= 0)
         {
-            this->_clients.insert(std::make_pair(client_fd, Client(client_fd)));
+            this->_clients.insert(std::make_pair(client_fd, Client(client_fd, server_fd)));
             Log::server_accept_client(server_fd, client_fd);
             FD_SET(client_fd, &this->_read_set); // add the client to read set
             if (client_fd > this->_biggest_fd)
@@ -74,7 +73,7 @@ void Core::client_multiplex()
             throw std::runtime_error("Core.cpp:71");
         
         // check servers
-        for (std::map<int, Server>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
+        for (std::map<int, ServerBlock>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
         {
             if (FD_ISSET(it->first, &read_set_copy)) // Check if fd is still present in the set
                 this->get_client(it->first); // Accept a client for the serve
@@ -132,7 +131,7 @@ void Core::build_request(int client_fd)
 
         client.set_last_activity();
         Log::building_request(client_fd);
-        client.set_resquest(buffer, bytes);
+        client.set_resquest(buffer, bytes, this->_servers);
         if (client.get_parser_state() == BODY) // body not all setn
         {
             client.set_client_state(BUILD_REQUEST);

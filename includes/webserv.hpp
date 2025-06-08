@@ -17,3 +17,6 @@
 #include "Client.hpp"
 #include "File.hpp"
 #include "Log.hpp"
+#include "config.hpp"
+
+void handle_request(int client_socket);

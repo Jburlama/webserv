@@ -15,6 +15,7 @@
 #include "HttpResponse.hpp"
 #include "File.hpp"
 #include "Log.hpp"
+#include "config.hpp"
 
 enum e_ClientState {
     BUILD_REQUEST  = 1,
@@ -30,6 +31,7 @@ public File
 {
     private:
         int                     _fd;
+        int                     _server_fd;
         time_t                  _last_activity;  // Track last I/O activity
         int                     _client_state;
         ssize_t                 _bytes_sent;   // Send progress
@@ -37,7 +39,7 @@ public File
 
     public:
         Client():_fd(-1),_last_activity(0),_client_state(BUILD_REQUEST),_bytes_sent(0) {};
-        Client(int fd);
+        Client(int fd, int server_fd);
         ~Client();
 
         int                 get_fd()              const {return this->_fd;};
@@ -45,15 +47,17 @@ public File
         int                 get_client_state()          {return this->_client_state;};
         ssize_t             get_bytes_sent()            {return this->_bytes_sent;};
         int                 get_status()                {return this->_status;};
+        int                 get_server_fd()             {return this->_server_fd;};
 
         void    set_status(int status) {this->_status = status;};
-        void    set_resquest(const char *buffer, ssize_t bytes);
+        void    set_resquest(const char *buffer, ssize_t bytes, std::map<int, ServerBlock> &servers);
         void    set_response();
-        void    set_last_activity()                  {this->_last_activity = time(NULL);};
-        void    set_client_state(int state)          {this->_client_state = state;};
+        void    set_last_activity()               {this->_last_activity = time(NULL);};
+        void    set_client_state(int state)       {this->_client_state = state;};
         void    set_file(const char *path_name);
         void    set_response_body();
-        void    set_bytes_sent(ssize_t bytes)        {this->_bytes_sent = bytes;};
-        void    set_closed_fd()      {this->_fd = -1;};
-        void    set_closed_file_fd() {this->_file_fd = -1;};
+        void    set_bytes_sent(ssize_t bytes)     {this->_bytes_sent = bytes;};
+        void    set_closed_fd()                   {this->_fd = -1;};
+        void    set_closed_file_fd()              {this->_file_fd = -1;};
+        void    set_server_fd(int fd)             {this->_server_fd = fd;};
 };

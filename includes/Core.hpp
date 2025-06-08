@@ -21,23 +21,24 @@
 #include "Server.hpp"
 #include "File.hpp"
 #include "Log.hpp"
+#include "config.hpp"
 
 #define BUFFER_SIZE 40000
 
 class Core
 {
     private:
-        std::map<int, Server>   _servers;   // Track servers by fd
-        std::map<int, Client>   _clients;   // Track clients by fd
-        time_t                  _timeout;   // Global timeout in seconds
-        fd_set                  _read_set;  // Separate read FD set
-        fd_set                  _write_set; // Separate write FD set
-        bool                    _client_connection;
-        int                     _biggest_fd;
+        std::map<int, ServerBlock>   _servers;   // Track servers by fd
+        std::map<int, Client>        _clients;   // Track clients by fd
+        time_t                       _timeout;   // Global timeout in seconds
+        fd_set                       _read_set;  // Separate read FD set
+        fd_set                       _write_set; // Separate write FD set
+        bool                         _client_connection;
+        int                          _biggest_fd;
     
     public:
         Core(); // Don't call default
-        Core(std::vector<int> ports);
+        Core(std::vector<ServerBlock> server_blocks);
         ~Core() {};
 
         void    get_client(int server_fd);

@@ -1,7 +1,8 @@
 #include "../includes/Client.hpp"
 
-Client::Client(int fd)
-:_fd(fd),_client_state(BUILD_REQUEST),_bytes_sent(0),_status(0)
+Client::Client(int fd, int server_fd)
+:_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
+_status(0)
 {
     this->set_last_activity();
 }
@@ -10,7 +11,7 @@ Client::~Client()
 {
 }
 
-void    Client::set_resquest(const char *buffer, ssize_t bytes)
+void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, ServerBlock> &servers)
 {
     try
     {
@@ -38,7 +39,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes)
                 case PATH:
                     this->_path = this->_parse_path(i, str);
                     // TODO: Fix when the config file is added
-                    this->_path = "content/html/index.html";
+                    this->_path = servers[this->_server_fd].root + "/" + servers[this->_server_fd].index;
                     this->_parser_state = VERSION;
                     break ;
 
