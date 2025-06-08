@@ -1,6 +1,6 @@
 #include "../includes/config.hpp"
 
-void configValues::isKeyWordLocationPart(std::string statement, LocationBlock loc) {
+void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &loc) {
 	std::istringstream iss(statement);
 	std::string key;
 	iss >> key;
@@ -69,7 +69,7 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock lo
 	}
 }
 
-bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock){
+bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock, LocationBlock &loc){
 
 	if (line.find("location") == 0 && line.find("{") != std::string::npos){
 		std::string beforeBrace = line.substr(0, line.find("{"));
@@ -90,6 +90,7 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 		iss >> keyword >> second >> thrid;
 
 		if (keyword == "location" && !second.empty()){
+			loc.path = second;
 			if (!insideLocationBlock){
 				insideLocationBlock = true;
 				if (!afterBrace.empty())
@@ -151,7 +152,7 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	return false; // Not a location block   
 }
 
-void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine, ServerBlock srv) {
+void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine, ServerBlock &srv) {
     bool insideLocationBlock = false;
 	LocationBlock loc;
 
@@ -170,7 +171,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
             continue;
 
         // Detect the start of the location block
-        if (detectLocationBlock(file, line, insideLocationBlock)) {
+        if (detectLocationBlock(file, line, insideLocationBlock, loc)) {
 			_numOfLocInSrvBlock++;
             if (line.empty())
                 continue;

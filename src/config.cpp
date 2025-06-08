@@ -48,7 +48,7 @@ void configValues::defaultPreConfigs(){
 
 		_numOfLocInSrvBlock = -1;
 
-		//initializeKeyWordsVariables();
+		initializeKeyWordsVariables(); //I need to double check the place of this function, it seems it might throw an exception when I have the second server/location block
 }
 
 void configValues::defaultConfigs(ServerBlock srv){
@@ -58,7 +58,7 @@ void configValues::defaultConfigs(ServerBlock srv){
 		srv.host = "0.0.0.0";
 
 	/* Check if there aren't duplicates */
-	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){
+	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){	
 		std::cerr << "There are duplicates keywords in the configuration file" << std::endl;
 		throw std::exception();
 	}
@@ -69,7 +69,7 @@ void configValues::defaultConfigs(ServerBlock srv){
 		srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
 }
 
-void configValues::isKeyWord(std::string statement, ServerBlock srv){
+void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	std::istringstream iss(statement);
 	std::string key;
 	iss >> key;
@@ -332,6 +332,14 @@ std::string configValues::get_index(int i) const {
     return "";
 }
 
+std::string configValues::get_location_path(int srvIdx, int locIdx) const{
+	if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].path;
+    }
+    return "";
+}
 std::string configValues::get_location_index(int srvIdx, int locIdx) const {
     if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
         const ServerBlock &srv = _servers[srvIdx];

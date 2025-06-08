@@ -8,7 +8,7 @@
 #include <vector>
 
 struct LocationBlock {
-  std::string path;
+  std::string path; //didn't set a getter for path, SELF REMINDER
   std::string index;
   std::string allow_methods;
   std::string upload_store;
@@ -18,7 +18,7 @@ struct LocationBlock {
   std::string root;
   bool autoindex;
 
-  LocationBlock() : path("/"), index("index.html"), allow_methods("GET"),
+  LocationBlock() : path("/"), index("index.html"), allow_methods("GET"), //This might be like allow_methods = "GET GET POST" I can use a function for the defaults like I use too
                     root("./www"), autoindex(false) {}
 };
 
@@ -32,7 +32,7 @@ struct ServerBlock {
   std::string index;
   std::vector<LocationBlock> locations;
 
-  ServerBlock() : listen("80"), host("0.0.0.0"), clientMaxBodySize("1024"),
+  ServerBlock() : listen("80"), host("0.0.0.0"), serverName(""), clientMaxBodySize("1024"),
                   root("./www"), index("index.html") {}
 };
 
@@ -61,23 +61,23 @@ class configValues{
     int _howManyIndex_location, _howManyAllow_methods, _howManyUpload_store, _howManyCgi_pass, _howManyCgi_path, _howManyCgi_ext, _howManyRoot_location, _howManyAutoindex;
 
 		void parseConfig(const std::string& configFile);
-    void parseLocatePart(std::istream &file, std::string &statement, std::string &line, ServerBlock srv);
-    void isKeyWord(std::string statement, ServerBlock srv);
-    void isKeyWordLocationPart(std::string statement, LocationBlock loc);
+    void parseLocatePart(std::istream &file, std::string &statement, std::string &line, ServerBlock &srv);
+    void isKeyWord(std::string statement, ServerBlock &srv);
+    void isKeyWordLocationPart(std::string statement, LocationBlock &loc);
 
     void defaultPreConfigs(); //Default values or NULL
     void initializeKeyWordsVariables(); //initialize variables
     void defaultConfigs(ServerBlock srv); // Default values for listen & host. Check if there aren't douplicate keywords
 
     bool detectServerBlock(std::istream& file, std::string& line, bool& insideServerBlock); //Check if it's a server block
-    bool detectLocationBlock(std::istream& file, std::string& line, bool& insideServerBlock); //Check if it's a location block
+    bool detectLocationBlock(std::istream& file, std::string& line, bool& insideServerBlock, LocationBlock &loc); //Check if it's a location block
 
 	public:
 		configValues(std::string &configFile);
 		~configValues();
 		
     // Getters for server's block
-		std::string get_listen(int i) const;
+	std::string get_listen(int i) const;
     std::string get_host(int i) const;
     std::string get_serverName(int i) const;
     std::string get_errorPage(int i) const;
@@ -86,6 +86,7 @@ class configValues{
     std::string get_index(int i) const;
 
     // Getters for location's block
+	std::string get_location_path(int serverIndex, int locationIndex) const;
     std::string get_location_index(int serverIndex, int locationIndex) const;
     std::string get_location_allow_methods(int serverIndex, int locationIndex) const;
     std::string get_location_upload_store(int serverIndex, int locationIndex) const;
