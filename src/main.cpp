@@ -1,40 +1,7 @@
 #include "../includes/webserv.hpp"
 
 void configTesting(configValues test){
-	std::string str = test.get_listen();
-	std::cout << "Listen: " << str << std::endl; //8080
-	str = test.get_host();
-	std::cout << "host: " << str << std::endl; //127.0.0.1
-	str = test.get_serverName();
-	std::cout << "serverName: " << str << std::endl; //localhost
-	str = test.get_errorPage();
-	std::cout << "ErrorPage " << str << std::endl; //404 /404.html
-	str = test.get_clientMaxBodySize();
-	std::cout << "ClientMaxBodySize: " << str << std::endl; //1024
-	str = test.get_root();
-	std::cout << "root: " << str << std::endl; // /var/www/html
-	str = test.get_index();
-	std::cout << "index: " << str << std::endl;
-
-	std::cout << "---------------" << std::endl;
-	std::cout << "LOCATION PART" << std::endl;
-	str = test.get_location_index();
-	std::cout << "index: " << str << std::endl;
-	str = test.get_location_allow_methods();
-	std::cout << "allow_methods: " << str << std::endl;
-	str = test.get_location_upload_store();
-	std::cout << "upload_store: " << str << std::endl;
-	str = test.get_location_cgi_pass();
-	std::cout << "cgi_pass: " << str << std::endl;
-	str = test.get_location_cgi_path();
-	std::cout << "cgi_path: " << str << std::endl;
-	str = test.get_location_cgi_ext();
-	std::cout << "cgi_ext: " << str << std::endl;
-	str = test.get_location_root();
-	std::cout << "root: " << str << std::endl;
-	bool _bool = false;
-	_bool = test.get_location_autoindex();
-	std::cout << "autoIndex: " << _bool << std::endl;
+	(void)test;
 }
 
 int main (int argc, char *argv[])

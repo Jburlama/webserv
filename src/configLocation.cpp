@@ -1,62 +1,62 @@
 #include "../includes/config.hpp"
 
-void configValues::isKeyWordLocationPart(std::string statement) {
+void configValues::isKeyWordLocationPart(std::string statement, LocationBlock loc) {
 	std::istringstream iss(statement);
 	std::string key;
 	iss >> key;
 
 	if (key == "index") {
-		iss >> _location_index;
+		iss >> key;
 		while (iss >> key) {
-			if (!_location_index.empty()) _location_index += " ";
-			_location_index += key;
+			if (!loc.index.empty()) loc.index += " ";
+			loc.index += key;
 		}
 		_howManyIndex_location++;
 	}
 	else if (key == "allow_methods") {
 		while (iss >> key) {
-			if (!_location_allow_methods.empty()) _location_allow_methods += " ";
-			_location_allow_methods += key;
+			if (!loc.allow_methods.empty()) loc.allow_methods += " ";
+			loc.allow_methods += key;
 		}
 		_howManyAllow_methods++;
 	}
 	else if (key == "upload_store") {
-		iss >> _location_upload_store;
+		iss >> loc.upload_store;
 		_howManyUpload_store++;
 	}
 	else if (key == "cgi_pass") {
 		while (iss >> key) {
-			if (!_location_cgi_pass.empty()) _location_cgi_pass += " ";
-			_location_cgi_pass += key;
+			if (!loc.cgi_pass.empty()) loc.cgi_pass += " ";
+			loc.cgi_pass += key;
 		}
 		_howManyCgi_pass++;
 	}
 	else if (key == "cgi_path") {
 		while (iss >> key) {
-			if (!_location_cgi_path.empty()) _location_cgi_path += " ";
-			_location_cgi_path += key;
+			if (!loc.cgi_path.empty()) loc.cgi_path += " ";
+			loc.cgi_path += key;
 		}
 		_howManyCgi_path++;
 	}
 	else if (key == "cgi_ext") {
 		while (iss >> key) {
-			if (!_location_cgi_ext.empty()) _location_cgi_ext += " ";
-			_location_cgi_ext += key;
+			if (!loc.cgi_ext.empty()) loc.cgi_ext += " ";
+			loc.cgi_ext += key;
 		}
 		_howManyCgi_ext++;
 	}
 	else if (key == "root") {
-		iss >> _location_root;
+		iss >> loc.root;
 		_howManyRoot_location++;
 	}
 	else if (key == "autoindex") {
 		std::string value;
 		iss >> value;
 		if (value == "on;" || value == "on") {
-			_location_autoindex = true;
+			loc.autoindex = true;
 		}
 		else if (value == "off;" || value == "off") {
-			_location_autoindex = false;
+			loc.autoindex = false;
 		}
 		else {
 			throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
@@ -151,8 +151,10 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	return false; // Not a location block   
 }
 
-void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine) {
+void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine, ServerBlock srv) {
     bool insideLocationBlock = false;
+	LocationBlock loc;
+
 	(void)unmodifiedLine;
     do {
         // Remove comments
@@ -169,6 +171,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
 
         // Detect the start of the location block
         if (detectLocationBlock(file, line, insideLocationBlock)) {
+			_numOfLocInSrvBlock++;
             if (line.empty())
                 continue;
         }
@@ -193,10 +196,11 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
                     statement.erase(statement.find_last_not_of(" \t") + 1);
                     if (statement.empty())
                         continue;
-                    isKeyWordLocationPart(statement);
+                    isKeyWordLocationPart(statement, loc);
                 }
             }
             insideLocationBlock = false;
+			srv.locations.push_back(loc);
             // Done with this block
             return;
         }
@@ -209,7 +213,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
             statement.erase(statement.find_last_not_of(" \t") + 1);
             if (statement.empty())
                 continue;
-            isKeyWordLocationPart(statement);
+            isKeyWordLocationPart(statement, loc);
         }
 
     } while (std::getline(file, line));

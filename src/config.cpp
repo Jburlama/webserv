@@ -28,8 +28,8 @@ void configValues::initializeKeyWordsVariables(){
 }
 
 void configValues::defaultPreConfigs(){
-	/* Default configurations */
-		_listen = "80"; 					// Default port
+	//Default configurations
+		/* _listen = "80"; 					// Default port
     	_host = "0.0.0.0"; 					// All interfaces
     	_serverName = "";
     	_errorPage = "";
@@ -44,16 +44,18 @@ void configValues::defaultPreConfigs(){
     	_location_cgi_path = "";
     	_location_cgi_ext = "";
     	_location_root = "./www";
-    	_location_autoindex = false;      	 // off
+    	_location_autoindex = false; */
+
+		_numOfLocInSrvBlock = -1;
 
 		//initializeKeyWordsVariables();
 }
 
-void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
+void configValues::defaultConfigs(ServerBlock srv){
 	if (_howManyListen == 0)
-		_listen = "80";
-	if (_listen == "8888" && _howManyHost == 0)
-		_host = "0.0.0.0";
+		srv.listen = "80";
+	if (srv.listen == "8888" && _howManyHost == 0)
+		srv.host = "0.0.0.0";
 
 	/* Check if there aren't duplicates */
 	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){
@@ -62,51 +64,51 @@ void configValues::defaultConfigs(int _howManyListen, int _howManyHost){
 	}
 
 	if (_howManyIndex_location == 0)
-		_location_index = "index.html";
+		srv.locations[_numOfLocInSrvBlock].index = "index.html";
 	if (_howManyAllow_methods == 0)
-		_location_allow_methods = "GET";
+		srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
 }
 
-void configValues::isKeyWord(std::string statement){
+void configValues::isKeyWord(std::string statement, ServerBlock srv){
 	std::istringstream iss(statement);
 	std::string key;
 	iss >> key;
 
 	if (key == "listen"){
-		iss >> _listen;
+		iss >> srv.listen;
 		_howManyListen++;
 	}
 	else if (key == "host"){
-		iss >> _host;
+		iss >> srv.host;
 		_howManyHost++;
 	}
 	else if (key == "server_name"){
 		while (iss >> key){
-			if (!_serverName.empty()) _serverName += " ";
-			_serverName += key;
+			if (!srv.serverName.empty()) srv.serverName += " ";
+			srv.serverName += key;
 		}
 		_howManyServerName++;
 	}
 	else if (key == "error_page"){
 		while (iss >> key){
-			if (!_errorPage.empty()) _errorPage += " ";
-			_errorPage += key;
+			if (!srv.errorPage.empty()) srv.errorPage += " ";
+			srv.errorPage += key;
 		}
 		_howManyErrorMessage++;
 	}
 	else if (key == "client_max_body_size"){
-		iss >> _clientMaxBodySize;
+		iss >> srv.clientMaxBodySize;
 		_howManyClient++;
 	}
 	else if (key == "root"){
-		iss >> _root;
+		iss >> srv.root;
 		_howManyRoot++;
 	}
 	else if (key == "index"){
-		iss >> _index;
+		iss >> srv.index;
 		while (iss >> key){
-			if (!_index.empty()) _index += " ";
-			_index += key;
+			if (!srv.index.empty()) srv.index += " ";
+			srv.index += key;
 		}
 		_howManyIndex++;
 	}
@@ -195,6 +197,7 @@ bool configValues::detectServerBlock(std::istream& file, std::string& line, bool
 
 void configValues::parseConfig(const std::string& configFile){
     defaultPreConfigs();
+	ServerBlock srvStruct;
 
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
@@ -206,11 +209,11 @@ void configValues::parseConfig(const std::string& configFile){
     bool insideServerBlock = false;
 
     while (std::getline(file, line)){
-        // Remove leading/trailing whitespace
+        /* Remove leading/trailing whitespace */
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
 
-        // Remove comments
+        /* Remove comments */
         size_t commentPos = line.find('#');
         if (commentPos != std::string::npos)
             line = line.substr(0, commentPos);
@@ -251,12 +254,13 @@ void configValues::parseConfig(const std::string& configFile){
                     if (statement.empty())
                         continue;
 
-                    isKeyWord(statement);
+                    isKeyWord(statement, srvStruct);
                 }
             }
-            insideServerBlock = false; // Only this!
+            insideServerBlock = false;
+			_servers.push_back(srvStruct);
             if (!afterBrace.empty())
-                line = afterBrace; // re-parsed
+                line = afterBrace; // re-parsed the line after }
             else
                 continue;
         }
@@ -268,7 +272,7 @@ void configValues::parseConfig(const std::string& configFile){
 
         // Handle location block
         if (line.find("location") == 0 && line.find("{") != std::string::npos) {
-            parseLocatePart(file, line, line);
+            parseLocatePart(file, line, line, srvStruct);
             continue;
         }
 
@@ -281,225 +285,114 @@ void configValues::parseConfig(const std::string& configFile){
 
             if (statement.empty())
                 continue;
-            isKeyWord(statement);
+            isKeyWord(statement, srvStruct);
         }
     }
 
     // At the end, apply defaults/checks only once for the server block you have
-    defaultConfigs(_howManyListen, _howManyHost);
+    defaultConfigs(srvStruct);
 
     file.close();
 }
 
-/* Take info from .config and store it in this class */
-//void configValues::parseConfig(const std::string& configFile){
-//	defaultPreConfigs();
-//
-//    std::ifstream file(configFile.c_str());
-//    if (!file.is_open()){
-//        std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
-//        return ;
-//    }
-//
-//    std::string line;
-//    bool insideServerBlock = false;
-//
-//    while (std::getline(file, line)){
-//        /* Remove leading/trailing whitespace */
-//        line.erase(0, line.find_first_not_of(" \t"));
-//        line.erase(line.find_last_not_of(" \t") + 1);
-//
-//        /* Skip empty lines and comments */
-//		size_t commentPos = line.find('#');
-//		if (commentPos != std::string::npos)
-//		    line = line.substr(0, commentPos);
-//
-//		line.erase(0, line.find_first_not_of(" \t"));
-//		line.erase(line.find_last_not_of(" \t") + 1);
-//
-//		// Now skip if empty
-//		if (line.empty())
-//		    continue;
-//
-//        /* Detect start of server block */
-//		if (detectServerBlock(file, line, insideServerBlock)){
-//			if (line.empty())
-//				continue;
-//		}
-//
-//		if (line.find('}') != std::string::npos){
-//			if (!insideServerBlock){
-//				std::cerr << "Invalid '}' outside of server block: " << line << std::endl;
-//				throw std::exception();
-//			}
-//
-//			std::string beforeBrace = line.substr(0, line.find('}'));
-//			std::string afterBrace = line.substr(line.find('}') + 1);
-//		
-//			// Trim both parts
-//			beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
-//			beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
-//			afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
-//			afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
-//		
-//			// First, parse the config that comes before the closing brace
-//			if (!beforeBrace.empty()){
-//				std::stringstream ss(beforeBrace);
-//				std::string statement;
-//
-//				if (line[line.length() - 2] != ';'){
-//					std::cerr << "Missing semicolon in server's block at the end of: " << line << std::endl;
-//					throw std::exception();
-//				}
-//				while (std::getline(ss, statement, ';')){
-//					statement.erase(0, statement.find_first_not_of(" \t"));
-//					statement.erase(statement.find_last_not_of(" \t") + 1);
-//					if (statement.empty())
-//						continue;
-//				
-//					isKeyWord(statement);
-//				}
-//			}
-//			// Finalize current server block
-//			defaultConfigs(_howManyListen, _howManyHost);
-//			initializeKeyWordsVariables(); // For new block
-//			insideServerBlock = false;
-//
-//			// Continue parsing after the }
-//			if (!afterBrace.empty())
-//				line = afterBrace; // re-parsed
-//			else
-//				continue;
-//		}
-//
-//        if (!insideServerBlock){
-//			std::cout << "Invalid text outside server's block: " << line << std::endl;
-//			throw std::exception();
-//		}
-//		
-//		std::cout << "[DEBUG] Statement: '" << line << "'" << std::endl;
-//		if (line.find("location") == 0 && line.find("{") != std::string::npos) {
-//		    parseLocatePart(file, line, line);
-//		    continue;
-//		}
-//		// Split by ';'
-//
-//		while (std::getline(file, line)){
-//		    // Remove comments and whitespace as before
-//		    line.erase(0, line.find_first_not_of(" \t"));
-//		    line.erase(line.find_last_not_of(" \t") + 1);
-//
-//		    size_t commentPos = line.find('#');
-//		    if (commentPos != std::string::npos)
-//		        line = line.substr(0, commentPos);
-//		    line.erase(0, line.find_first_not_of(" \t"));
-//		    line.erase(line.find_last_not_of(" \t") + 1);
-//
-//		    if (line.empty())
-//		        continue;
-//		    if (detectServerBlock(file, line, insideServerBlock)) {
-//		        if (line.empty())
-//		            continue;
-//		    }
-//		    if (!insideServerBlock){
-//		        std::cout << "Invalid text outside server's block: " << line << std::endl;
-//		        throw std::exception();
-//		    }
-//
-//		    // 1. **HANDLE LOCATION IMMEDIATELY IF IT APPEARS**
-//		    if (line.find("location") == 0 && line.find("{") != std::string::npos) {
-//		        parseLocatePart(file, line, line);
-//		        continue;
-//		    }
-//
-//		    // 2. **HANDLE CLOSING BRACE**
-//		    if (line.find('}') != std::string::npos) {
-//		        std::string beforeBrace = line.substr(0, line.find('}'));
-//		        std::string afterBrace = line.substr(line.find('}') + 1);
-//			
-//		        // Remove whitespace
-//		        beforeBrace.erase(0, beforeBrace.find_first_not_of(" \t"));
-//		        beforeBrace.erase(beforeBrace.find_last_not_of(" \t") + 1);
-//		        afterBrace.erase(0, afterBrace.find_first_not_of(" \t"));
-//		        afterBrace.erase(afterBrace.find_last_not_of(" \t") + 1);
-//			
-//		        // ***RECURSIVELY HANDLE WHAT'S BEFORE THE BRACE***
-//		        if (!beforeBrace.empty()) {
-//		            // If this part is a location, handle it!
-//		            if (beforeBrace.find("location") == 0 && beforeBrace.find("{") != std::string::npos) {
-//		                parseLocatePart(file, beforeBrace, beforeBrace);
-//		            } else {
-//		                std::stringstream ss(beforeBrace);
-//		                std::string statement;
-//		                while (std::getline(ss, statement, ';')) {
-//		                    statement.erase(0, statement.find_first_not_of(" \t"));
-//		                    statement.erase(statement.find_last_not_of(" \t") + 1);
-//		                    if (statement.empty())
-//		                        continue;
-//		                    isKeyWord(statement);
-//		                }
-//		            }
-//		        }
-//			
-//		        // Finalize current server block
-//		        insideServerBlock = false;
-//			
-//		        // If there's more after the brace, re-parse the line
-//		        if (!afterBrace.empty())
-//		            line = afterBrace;
-//		        else
-//		            continue;
-//		    }
-//		
-//		    // 3. **NORMAL KEYWORD PARSING**
-//		    std::stringstream ss(line);
-//		    std::string statement;
-//		    while (std::getline(ss, statement, ';')) {
-//		        statement.erase(0, statement.find_first_not_of(" \t"));
-//		        statement.erase(statement.find_last_not_of(" \t") + 1);
-//		        if (statement.empty())
-//		            continue;
-//		        isKeyWord(statement);
-//		    }
-//		}
-//		/* std::stringstream ss(line);
-//		std::string statement;
-//		while (std::getline(ss, statement, ';')) {
-//		    statement.erase(0, statement.find_first_not_of(" \t"));
-//		    statement.erase(statement.find_last_not_of(" \t") + 1);
-//		
-//		    if (statement.empty())
-//		        continue;
-//		    if (statement.empty() || line.find(statement + ";") == std::string::npos) {
-//		        std::cerr << "Missing semicolon in Server's block at the end of: " << statement << std::endl;
-//		        throw std::exception();
-//		    }
-//		    isKeyWord(statement);
-//		} */
-//    }
-//	if (insideServerBlock == 1){
-//		std::cout << "Server or location close brackets (}) missing" << std::endl;
-//		throw std::exception();
-//	}
-//    file.close();
-//}
-//istream can read both files and strings
-
-
 /* Getters */
-std::string configValues::get_listen() const{return _listen;}
-std::string configValues::get_host() const{return _host;}
-std::string configValues::get_serverName() const{return _serverName;}
-std::string configValues::get_errorPage() const{return _errorPage;}
-std::string configValues::get_clientMaxBodySize() const{return _clientMaxBodySize;}
-std::string configValues::get_root() const{return _root;}
-std::string configValues::get_index() const{return _index;}
+std::string configValues::get_listen(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].listen;
+    return "";
+}
+std::string configValues::get_host(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].host;
+    return "";
+}
+std::string configValues::get_serverName(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].serverName;
+    return "";
+}
+std::string configValues::get_errorPage(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].errorPage;
+    return "";
+}
+std::string configValues::get_clientMaxBodySize(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].clientMaxBodySize;
+    return "";
+}
+std::string configValues::get_root(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].root;
+    return "";
+}
+std::string configValues::get_index(int i) const {
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].index;
+    return "";
+}
 
-std::string configValues::get_location_index() const{return _location_index;}
-std::string configValues::get_location_allow_methods() const{return _location_allow_methods;}
-std::string configValues::get_location_upload_store() const{return _location_upload_store;}
-std::string configValues::get_location_cgi_pass() const{return _location_cgi_pass;}
-std::string configValues::get_location_cgi_path() const{return _location_cgi_path;}
-std::string configValues::get_location_cgi_ext() const{return _location_cgi_ext;}
-std::string configValues::get_location_root() const{return _location_root;}
-bool configValues::get_location_autoindex() const{return _location_autoindex;}
+std::string configValues::get_location_index(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].index;
+    }
+    return "";
+}
+std::string configValues::get_location_allow_methods(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].allow_methods;
+    }
+    return "";
+}
+std::string configValues::get_location_upload_store(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].upload_store;
+    }
+    return "";
+}
+std::string configValues::get_location_cgi_pass(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].cgi_pass;
+    }
+    return "";
+}
+std::string configValues::get_location_cgi_path(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].cgi_path;
+    }
+    return "";
+}
+std::string configValues::get_location_cgi_ext(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].cgi_ext;
+    }
+    return "";
+}
+std::string configValues::get_location_root(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].root;
+    }
+    return "";
+}
+bool configValues::get_location_autoindex(int srvIdx, int locIdx) const {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+        const ServerBlock &srv = _servers[srvIdx];
+        if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
+            return srv.locations[locIdx].autoindex;
+    }
+    return false;
+}
