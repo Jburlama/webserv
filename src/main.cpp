@@ -8,8 +8,17 @@ void printConfig(const configValues& config) {
         std::cout << "listen: " << config.get_listen(0) << std::endl;
         std::cout << "host: " << config.get_host(0) << std::endl;
         std::cout << "serverName: " << config.get_serverName(0) << std::endl;
-        std::cout << "errorPage: " << config.get_errorPage(0) << std::endl;
-        std::cout << "clientMaxBodySize: " << config.get_clientMaxBodySize(0) << std::endl;
+		
+		/* if (!config.get_errorPage(0).empty())
+    		return ;
+		else{
+			const std::vector<std::string>& errPages = config.get_errorPage(0);
+			std::cout << "errorPage(s):" << std::endl;
+			for (size_t i = 0; i < errPages.size(); ++i) {
+			    std::cout << "  " << errPages[i] << std::endl;
+			}
+		} */
+        /* std::cout << "clientMaxBodySize: " << config.get_clientMaxBodySize(0) << std::endl;
         std::cout << "root: " << config.get_root(0) << std::endl;
         std::cout << "index: " << config.get_index(0) << std::endl;
 
@@ -22,7 +31,8 @@ void printConfig(const configValues& config) {
         std::cout << "  cgi_path: " << config.get_location_cgi_path(0, 0) << std::endl;
         std::cout << "  cgi_ext: " << config.get_location_cgi_ext(0, 0) << std::endl;
         std::cout << "  root: " << config.get_location_root(0, 0) << std::endl;
-        std::cout << "  autoindex: " << (config.get_location_autoindex(0, 0) ? "on" : "off") << std::endl;
+        std::cout << "  autoindex: " << (config.get_location_autoindex(0, 0) ? "on" : "off") << std::endl; */
+		
 }
 
 
@@ -38,6 +48,7 @@ int main (int argc, char *argv[])
         std::string configFile = argv[1];
 
         configValues config(configFile);
+		printConfig(config);
 
         Core core(config.get_server_blocks());
 
@@ -52,5 +63,9 @@ int main (int argc, char *argv[])
 	{
         std::cerr << e.what() << "\n";
         exit(STDERR_FILENO);
+	}
+	catch (std::exception &e) //THIS WILL STOP THE LOOP "Probably try{}catch{} to create config before the Core"
+	{
+		exit(STDERR_FILENO);
 	}
 }

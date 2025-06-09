@@ -14,7 +14,8 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		}
 		_howManyIndex_location++;
 	}
-	else if (key == "allow_methods") {
+	else if (key == "allow_methods"){
+		loc.allow_methods = key;
 		while (iss >> key) {
 			if (!loc.allow_methods.empty()) loc.allow_methods += " ";
 			loc.allow_methods += key;
@@ -63,6 +64,15 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 			throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
 		}
 		_howManyAutoindex++;
+	}
+	else if (key == "try_files"){
+		while (iss >> key) {
+			if (!loc.try_files.empty()) loc.try_files += " ";
+			loc.try_files += key;
+		}
+		//_howManytry_files++;                              NOT SURE IF I NEED A HowMany... HERE
+	}
+	else if (key == "try_files"){
 	}
 	else {
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
@@ -153,11 +163,9 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	return false; // Not a location block   
 }
 
-void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine, ServerBlock &srv) {
+void configValues::parseLocatePart(std::istream &file, std::string &line, ServerBlock &srv, LocationBlock &loc) {
     bool insideLocationBlock = false;
-	LocationBlock loc;
 
-	(void)unmodifiedLine;
     do {
         // Remove comments
         size_t commentPos = line.find('#');
@@ -174,6 +182,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
         // Detect the start of the location block
         if (detectLocationBlock(file, line, insideLocationBlock, loc)) {
 			_numOfLocInSrvBlock++;
+			loc = LocationBlock();
             if (line.empty())
                 continue;
         }
@@ -203,6 +212,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
             }
             insideLocationBlock = false;
 			srv.locations.push_back(loc);
+			loc = LocationBlock();
             // Done with this block
             return;
         }

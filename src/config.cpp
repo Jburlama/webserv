@@ -8,7 +8,7 @@ configValues::configValues(std::string &configFile){
 
 
     for (std::vector<ServerBlock>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
-    {
+{
         yes = 1;
         it->addr.sin_family = AF_INET;
         it->addr.sin_port = htons(std::atoi(it->listen.c_str()));
@@ -26,12 +26,11 @@ configValues::configValues(std::string &configFile){
 
 configValues::~configValues(){}
 
-void configValues::initializeKeyWordsVariables(){
-	/* Initiate values (can't have more than 1 per block) */
+void configValues::defaultPreConfigs(){
 	_howManyListen = 0;
 	_howManyHost = 0;
 	_howManyServerName = 0;
-	_howManyErrorMessage = 0;
+	//_howManyErrorMessage = 0;
 	_howManyClient = 0;
 	_howManyRoot = 0;
 	_howManyIndex = 0;
@@ -44,48 +43,34 @@ void configValues::initializeKeyWordsVariables(){
 	_howManyCgi_ext = 0;
 	_howManyRoot_location = 0;
 	_howManyAutoindex = 0;
+
+	
+	_numOfLocInSrvBlock = -1;
 }
 
-void configValues::defaultPreConfigs(){
-	//Default configurations
-		/* _listen = "80"; 					// Default port
-    	_host = "0.0.0.0"; 					// All interfaces
-    	_serverName = "";
-    	_errorPage = "";
-    	_clientMaxBodySize = "1024";
-    	_root = "./www";
-    	_index = "index.html";
-
-    	_location_index = "";
-    	_location_allow_methods = "";
-    	_location_upload_store = "";
-    	_location_cgi_pass = "";
-    	_location_cgi_path = "";
-    	_location_cgi_ext = "";
-    	_location_root = "./www";
-    	_location_autoindex = false; */
-
-		_numOfLocInSrvBlock = -1;
-
-		initializeKeyWordsVariables(); //I need to double check the place of this function, it seems it might throw an exception when I have the second server/location block
-}
-
-void configValues::defaultConfigs(ServerBlock srv){
+void configValues::defaultConfigs(ServerBlock &srv){
 	if (_howManyListen == 0)
 		srv.listen = "80";
 	if (srv.listen == "8888" && _howManyHost == 0)
 		srv.host = "0.0.0.0";
 
 	/* Check if there aren't duplicates */
-	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || _howManyErrorMessage > 1 || _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){	
+	if (_howManyListen > 1 || _howManyHost > 1 || _howManyServerName > 1 || /* _howManyErrorMessage > 1 || */ _howManyClient > 1 || _howManyRoot > 1 || _howManyIndex > 1){	
 		std::cerr << "There are duplicates keywords in the configuration file" << std::endl;
 		throw std::exception();
 	}
 
-	if (_howManyIndex_location == 0)
+	if (_howManyIndex_location == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size()){
+	    srv.locations[_numOfLocInSrvBlock].index = "index.html";
+	}
+	if (_howManyAllow_methods == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size()){
+	    srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
+	}
+
+	/* if (_howManyIndex_location == 0)
 		srv.locations[_numOfLocInSrvBlock].index = "index.html";
 	if (_howManyAllow_methods == 0)
-		srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
+		srv.locations[_numOfLocInSrvBlock].allow_methods = "GET"; */
 }
 
 void configValues::isKeyWord(std::string statement, ServerBlock &srv){
@@ -108,12 +93,25 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 		}
 		_howManyServerName++;
 	}
+	/* [0] will be the number(s) (404) [1] will be the path and so foward */         // If I have more than 1 server it will cause a segmentation fault
 	else if (key == "error_page"){
-		while (iss >> key){
-			if (!srv.errorPage.empty()) srv.errorPage += " ";
-			srv.errorPage += key;
+	    std::vector<std::string> numError;
+	    std::string token;
+	    // Gather numError
+	    while (iss >> token && token[0] != '/')
+	        numError.push_back(token);
+
+	    // Now token is the path
+	    if (!numError.empty() && token[0] == '/'){
+		    for (size_t i = 0; i < numError.size(); ++i){
+		        srv.errorPage.push_back(numError[i] + " " + token);
+				//std::cout << srv.errorPage[i] << std::endl;
+		    }
 		}
-		_howManyErrorMessage++;
+		else{
+		    std::cerr << "Invalid error_page directive!" << std::endl;
+			throw std::exception();
+		}
 	}
 	else if (key == "client_max_body_size"){
 		iss >> srv.clientMaxBodySize;
@@ -217,6 +215,7 @@ bool configValues::detectServerBlock(std::istream& file, std::string& line, bool
 void configValues::parseConfig(const std::string& configFile){
     defaultPreConfigs();
 	ServerBlock srvStruct;
+	LocationBlock locStruct;
 
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
@@ -228,6 +227,11 @@ void configValues::parseConfig(const std::string& configFile){
     bool insideServerBlock = false;
 
     while (std::getline(file, line)){
+		std::cout << "_servers.size(): " << _servers.size() << std::endl;
+		for (size_t i = 0; i < _servers.size(); ++i){
+		    std::cout << "Server #" << i << std::endl;
+		}
+
         /* Remove leading/trailing whitespace */
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);
@@ -244,6 +248,8 @@ void configValues::parseConfig(const std::string& configFile){
             continue;
 
         if (detectServerBlock(file, line, insideServerBlock)){
+			defaultPreConfigs();
+			srvStruct = ServerBlock();
             if (line.empty())
                 continue;
         }
@@ -278,6 +284,7 @@ void configValues::parseConfig(const std::string& configFile){
             }
             insideServerBlock = false;
 			_servers.push_back(srvStruct);
+			srvStruct = ServerBlock();  // This will reset the structure (otherwise it would keep the previous values)
             if (!afterBrace.empty())
                 line = afterBrace; // re-parsed the line after }
             else
@@ -290,15 +297,15 @@ void configValues::parseConfig(const std::string& configFile){
         }
 
         // Handle location block
-        if (line.find("location") == 0 && line.find("{") != std::string::npos) {
-            parseLocatePart(file, line, line, srvStruct);
+        if (line.find("location") == 0 && line.find("{") != std::string::npos){
+            parseLocatePart(file, line, srvStruct, locStruct);
             continue;
         }
 
         // Split by ';'
         std::stringstream ss(line);
         std::string statement;
-        while (std::getline(ss, statement, ';')) {
+        while (std::getline(ss, statement, ';')){
             statement.erase(0, statement.find_first_not_of(" \t"));
             statement.erase(statement.find_last_not_of(" \t") + 1);
 
@@ -315,108 +322,114 @@ void configValues::parseConfig(const std::string& configFile){
 }
 
 /* Getters */
-std::string configValues::get_listen(int i) const {
+std::string configValues::get_listen(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].listen;
     return "";
 }
-std::string configValues::get_host(int i) const {
+std::string configValues::get_host(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].host;
     return "";
 }
-std::string configValues::get_serverName(int i) const {
+std::string configValues::get_serverName(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].serverName;
     return "";
 }
-std::string configValues::get_errorPage(int i) const {
+/* const std::vector<std::string> &configValues::get_errorPage(int i) const{
+    static const std::vector<std::string> empty;
+    if (i >= 0 && static_cast<size_t>(i) < _servers.size())
+        return _servers[i].errorPage;
+    return empty;
+} */
+/* std::string configValues::get_errorPage(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].errorPage;
     return "";
-}
-std::string configValues::get_clientMaxBodySize(int i) const {
+} */
+std::string configValues::get_clientMaxBodySize(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].clientMaxBodySize;
     return "";
 }
-std::string configValues::get_root(int i) const {
+std::string configValues::get_root(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].root;
     return "";
 }
-std::string configValues::get_index(int i) const {
+std::string configValues::get_index(int i) const{
     if (i >= 0 && static_cast<size_t>(i) < _servers.size())
         return _servers[i].index;
     return "";
 }
 
 std::string configValues::get_location_path(int srvIdx, int locIdx) const{
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].path;
     }
     return "";
 }
-std::string configValues::get_location_index(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_index(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].index;
     }
     return "";
 }
-std::string configValues::get_location_allow_methods(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_allow_methods(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].allow_methods;
     }
     return "";
 }
-std::string configValues::get_location_upload_store(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_upload_store(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].upload_store;
     }
     return "";
 }
-std::string configValues::get_location_cgi_pass(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_cgi_pass(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].cgi_pass;
     }
     return "";
 }
-std::string configValues::get_location_cgi_path(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_cgi_path(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].cgi_path;
     }
     return "";
 }
-std::string configValues::get_location_cgi_ext(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_cgi_ext(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].cgi_ext;
     }
     return "";
 }
-std::string configValues::get_location_root(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+std::string configValues::get_location_root(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].root;
     }
     return "";
 }
-bool configValues::get_location_autoindex(int srvIdx, int locIdx) const {
-    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()) {
+bool configValues::get_location_autoindex(int srvIdx, int locIdx) const{
+    if (srvIdx >= 0 && static_cast<size_t>(srvIdx) < _servers.size()){
         const ServerBlock &srv = _servers[srvIdx];
         if (locIdx >= 0 && static_cast<size_t>(locIdx) < srv.locations.size())
             return srv.locations[locIdx].autoindex;
