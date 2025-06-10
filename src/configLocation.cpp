@@ -102,6 +102,16 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 
 		if (keyword == "location" && !second.empty()){
 			loc.path = second;
+			//const char *path = "/home/shitman/aProjects/webserv/config/config.conf";
+    		if (access(loc.path.c_str(), F_OK) == 0){
+    		    std::cout << "Path exists!\n";
+				/* std::cout << loc.path << std::endl; */
+    		}
+    		else{
+    		    std::cout << "Path does not exist!" << std::endl;
+    		    throw std::exception();
+    		}
+
 			if (!insideLocationBlock){
 				insideLocationBlock = true;
 				if (!afterBrace.empty())
@@ -122,11 +132,23 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	}
 	else if (line.find("location") == 0){
 		std::istringstream iss(line);
-		std::string keyword, invalid;
+		std::string keyword, path;
 
-		if (keyword.empty()){
+		iss >> keyword >> path;
+		if (path.empty()){
 			std::cout << "Missing text after location's keyword/s: " << line << std::endl;
 			throw std::exception();
+		}
+		else{
+			loc.path = path;
+    		if (access(loc.path.c_str(), F_OK) == 0){
+    		    std::cout << "Path exists!\n";
+				std::cout << loc.path << std::endl;
+    		}
+    		else{
+    		    std::cout << "Path does not exist!" << std::endl;
+    		    throw std::exception();
+    		}
 		}
 
 		std::string nextLine;
@@ -141,7 +163,6 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 				if (!insideLocationBlock){
 					insideLocationBlock = true;
 
-					std::cout << nextLine << ";" << std::endl;
 					std::string restOfLine = nextLine.substr(1);
 					restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
 					restOfLine.erase(restOfLine.find_last_not_of(" \t") + 1);

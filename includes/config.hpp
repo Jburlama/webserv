@@ -9,6 +9,10 @@
 #include <iostream>
 #include <cstdlib>
 
+#include <unistd.h>
+#include <cerrno>
+#include <cstring>
+
 struct LocationBlock{
   std::string path;
   std::string index;											// The default file to serve if a directory is requested. (Example / serves indexABC.html)

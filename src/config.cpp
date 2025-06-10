@@ -80,6 +80,7 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 		_howManyHost++;
 	}
 	else if (key == "server_name"){
+        iss >> srv.serverName;
 		while (iss >> key){
 			if (!srv.serverName.empty()) srv.serverName += " ";
 			srv.serverName += key;
@@ -248,6 +249,10 @@ void configValues::parseConfig(const std::string& configFile){
             parseLocatePart(file, line, srvStruct, locStruct);
             continue;
         }
+        else if (line.find("location") == 0){
+            parseLocatePart(file, line, srvStruct, locStruct);
+            continue;
+        }
 
         if (line.find('}') != std::string::npos){
             if (!insideServerBlock){
@@ -306,7 +311,6 @@ void configValues::parseConfig(const std::string& configFile){
 
     // At the end, apply defaults/checks only once for the server block you have
     defaultConfigs(srvStruct);
-
     file.close();
 }
 

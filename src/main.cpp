@@ -49,7 +49,8 @@ int main (int argc, char *argv[])
 
         configValues config(configFile);
 		printConfig(config);
-
+        
+        
         Core core(config.get_server_blocks());
 
         core.client_multiplex();
