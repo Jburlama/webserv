@@ -30,7 +30,6 @@ void configValues::defaultPreConfigs(){
 	_howManyListen = 0;
 	_howManyHost = 0;
 	_howManyServerName = 0;
-	//_howManyErrorMessage = 0;
 	_howManyClient = 0;
 	_howManyRoot = 0;
 	_howManyIndex = 0;
@@ -60,17 +59,11 @@ void configValues::defaultConfigs(ServerBlock &srv){
 		throw std::exception();
 	}
 
-	if (_howManyIndex_location == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size()){
+	if (_howManyIndex_location == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size())
 	    srv.locations[_numOfLocInSrvBlock].index = "index.html";
-	}
-	if (_howManyAllow_methods == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size()){
-	    srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
-	}
 
-	/* if (_howManyIndex_location == 0)
-		srv.locations[_numOfLocInSrvBlock].index = "index.html";
-	if (_howManyAllow_methods == 0)
-		srv.locations[_numOfLocInSrvBlock].allow_methods = "GET"; */
+	if (_howManyAllow_methods == 0 && _numOfLocInSrvBlock > -1 && static_cast<size_t>(_numOfLocInSrvBlock) < srv.locations.size())
+	    srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
 }
 
 void configValues::isKeyWord(std::string statement, ServerBlock &srv){
@@ -97,6 +90,7 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	else if (key == "error_page"){
 	    std::vector<std::string> numError;
 	    std::string token;
+
 	    // Gather numError
 	    while (iss >> token && token[0] != '/')
 	        numError.push_back(token);
@@ -105,7 +99,6 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	    if (!numError.empty() && token[0] == '/'){
 		    for (size_t i = 0; i < numError.size(); ++i){
 		        srv.errorPage.push_back(numError[i] + " " + token);
-				//std::cout << srv.errorPage[i] << std::endl;
 		    }
 		}
 		else{
@@ -227,10 +220,6 @@ void configValues::parseConfig(const std::string& configFile){
     bool insideServerBlock = false;
 
     while (std::getline(file, line)){
-		std::cout << "_servers.size(): " << _servers.size() << std::endl;
-		for (size_t i = 0; i < _servers.size(); ++i){
-		    std::cout << "Server #" << i << std::endl;
-		}
 
         /* Remove leading/trailing whitespace */
         line.erase(0, line.find_first_not_of(" \t"));
@@ -252,6 +241,12 @@ void configValues::parseConfig(const std::string& configFile){
 			srvStruct = ServerBlock();
             if (line.empty())
                 continue;
+        }
+
+        // Handle location block
+        if (line.find("location") == 0 && line.find("{") != std::string::npos){
+            parseLocatePart(file, line, srvStruct, locStruct);
+            continue;
         }
 
         if (line.find('}') != std::string::npos){
@@ -294,12 +289,6 @@ void configValues::parseConfig(const std::string& configFile){
         if (!insideServerBlock){
             std::cout << "Invalid text outside server's block: " << line << std::endl;
             throw std::exception();
-        }
-
-        // Handle location block
-        if (line.find("location") == 0 && line.find("{") != std::string::npos){
-            parseLocatePart(file, line, srvStruct, locStruct);
-            continue;
         }
 
         // Split by ';'
