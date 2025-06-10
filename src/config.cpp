@@ -114,6 +114,14 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	else if (key == "root"){
 		iss >> srv.root;
 		_howManyRoot++;
+        if (access(srv.root.c_str(), F_OK) == 0){
+    	    std::cout << "Path exists!\n";
+			std::cout << srv.root << std::endl;
+    	}
+    	else{
+    	    std::cout << "Path does not exist!" << std::endl;
+    	    throw std::exception();
+    	}
 	}
 	else if (key == "index"){
 		iss >> srv.index;

@@ -102,9 +102,8 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 
 		if (keyword == "location" && !second.empty()){
 			loc.path = second;
-			//const char *path = "/home/shitman/aProjects/webserv/config/config.conf";
     		if (access(loc.path.c_str(), F_OK) == 0){
-    		    std::cout << "Path exists!\n";
+    		    /* std::cout << "Path exists!\n"; */
 				/* std::cout << loc.path << std::endl; */
     		}
     		else{
@@ -142,8 +141,8 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 		else{
 			loc.path = path;
     		if (access(loc.path.c_str(), F_OK) == 0){
-    		    std::cout << "Path exists!\n";
-				std::cout << loc.path << std::endl;
+    		    /* std::cout << "Path exists!\n";
+				std::cout << loc.path << std::endl; */
     		}
     		else{
     		    std::cout << "Path does not exist!" << std::endl;
