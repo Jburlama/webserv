@@ -60,7 +60,7 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		else if (value == "off;" || value == "off") {
 			loc.autoindex = false;
 		}
-		else {
+		else{
 			throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
 		}
 		_howManyAutoindex++;
@@ -78,6 +78,23 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
 		throw std::exception();
 	}
+
+	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_ext > 1 ||  _howManyCgi_pass > 1 || 
+		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){	
+		std::cerr << "There are duplicates keywords in the configuration file (in location's block)" << std::endl;
+		throw std::exception();
+	} 
+}
+
+void configValues::resetLocationCounters() {
+    _howManyIndex_location = 0;
+    _howManyAllow_methods = 0;
+    _howManyUpload_store = 0;
+    _howManyCgi_pass = 0;
+    _howManyCgi_path = 0;
+    _howManyCgi_ext = 0;
+    _howManyRoot_location = 0;
+    _howManyAutoindex = 0;
 }
 
 bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock, LocationBlock &loc){
@@ -204,6 +221,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, Server
         // Detect the start of the location block
         if (detectLocationBlock(file, line, insideLocationBlock, loc)) {
 			_numOfLocInSrvBlock++;
+			resetLocationCounters();
             if (line.empty())
                 continue;
         }

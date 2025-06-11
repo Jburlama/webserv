@@ -62,6 +62,7 @@ class configValues{
 
     void defaultPreConfigs(); //Initialize values to 0 at every server block start
     void defaultConfigs(ServerBlock &srv); // Default values for listen & host. Check if there aren't douplicate keywords
+    void resetLocationCounters(); //Reset locations counters for duplicate keywords
 
     bool detectServerBlock(std::istream& file, std::string& line, bool& insideServerBlock); //Check if it's a server block
     bool detectLocationBlock(std::istream& file, std::string& line, bool& insideServerBlock, LocationBlock &loc); //Check if it's a location block
