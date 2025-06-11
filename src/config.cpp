@@ -229,7 +229,6 @@ void configValues::parseConfig(const std::string& configFile){
     bool insideServerBlock = false;
 
     while (std::getline(file, line)){
-
         /* Remove leading/trailing whitespace */
         line.erase(0, line.find_first_not_of(" \t"));
         line.erase(line.find_last_not_of(" \t") + 1);

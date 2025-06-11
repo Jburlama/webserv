@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <map>
+#include <csignal>
 
 #include "Core.hpp"
 #include "HttpRequest.hpp"

@@ -35,11 +35,18 @@ void printConfig(const configValues& config) {
 		
 }
 
+void signalHandler(int signum){
+    std::cout << "\nInterrupt signal received: " << signum << std::endl;
+    // Cleanup function will be executed here
+    exit(signum);
+}
+
 
 int main (int argc, char *argv[])
 {
     (void)argc;
     std::vector<int> ports;
+    std::signal(SIGINT, signalHandler);
 
     ports.insert(ports.end(), 8000);
     ports.insert(ports.end(), 8001);
