@@ -107,6 +107,7 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 				/* std::cout << loc.path << std::endl; */
     		}
     		else{
+				loc.path = "";
     		    std::cout << "Path does not exist!" << std::endl;
     		    throw std::exception();
     		}
@@ -145,6 +146,7 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 				std::cout << loc.path << std::endl; */
     		}
     		else{
+				loc.path = "";
     		    std::cout << "Path does not exist!" << std::endl;
     		    throw std::exception();
     		}
@@ -202,7 +204,6 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, Server
         // Detect the start of the location block
         if (detectLocationBlock(file, line, insideLocationBlock, loc)) {
 			_numOfLocInSrvBlock++;
-			loc = LocationBlock();
             if (line.empty())
                 continue;
         }

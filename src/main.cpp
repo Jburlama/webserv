@@ -18,7 +18,7 @@ void printConfig(const configValues& config) {
 			    std::cout << "  " << errPages[i] << std::endl;
 			}
 		} */
-        /* std::cout << "clientMaxBodySize: " << config.get_clientMaxBodySize(0) << std::endl;
+        std::cout << "clientMaxBodySize: " << config.get_clientMaxBodySize(0) << std::endl;
         std::cout << "root: " << config.get_root(0) << std::endl;
         std::cout << "index: " << config.get_index(0) << std::endl;
 
@@ -31,7 +31,7 @@ void printConfig(const configValues& config) {
         std::cout << "  cgi_path: " << config.get_location_cgi_path(0, 0) << std::endl;
         std::cout << "  cgi_ext: " << config.get_location_cgi_ext(0, 0) << std::endl;
         std::cout << "  root: " << config.get_location_root(0, 0) << std::endl;
-        std::cout << "  autoindex: " << (config.get_location_autoindex(0, 0) ? "on" : "off") << std::endl; */
+        std::cout << "  autoindex: " << (config.get_location_autoindex(0, 0) ? "on" : "off") << std::endl;
 		
 }
 
@@ -52,8 +52,9 @@ int main (int argc, char *argv[])
     ports.insert(ports.end(), 8001);
 	try
 	{
-        std::string configFile = argv[1];
-
+        std::string configFile = "";
+        if (argv[1])
+            configFile = argv[1];
         configValues config(configFile);
 		printConfig(config);
         

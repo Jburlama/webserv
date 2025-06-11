@@ -8,6 +8,7 @@
 #include <vector>
 #include <iostream>
 #include <cstdlib>
+#include <set>
 
 #include <unistd.h>
 #include <cerrno>

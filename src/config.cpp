@@ -115,8 +115,8 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 		iss >> srv.root;
 		_howManyRoot++;
         if (access(srv.root.c_str(), F_OK) == 0){
-    	    std::cout << "Path exists!\n";
-			std::cout << srv.root << std::endl;
+    	    /* std::cout << "Path exists!\n";
+			std::cout << srv.root << std::endl; */
     	}
     	else{
     	    std::cout << "Path does not exist!" << std::endl;
@@ -222,6 +222,8 @@ void configValues::parseConfig(const std::string& configFile){
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
+        //defaultConfigs(srvStruct);
+        //_servers.push_back(srvStruct);
         return ;
     }
 
@@ -318,6 +320,17 @@ void configValues::parseConfig(const std::string& configFile){
 
     // At the end, apply defaults/checks only once for the server block you have
     defaultConfigs(srvStruct);
+    for (size_t srvIdx = 0; srvIdx < _servers.size(); ++srvIdx) {
+        std::set<std::string> paths;
+        for (size_t locIdx = 0; locIdx < _servers[srvIdx].locations.size(); ++locIdx) {
+            const std::string& path = _servers[srvIdx].locations[locIdx].path;
+            if (paths.find(path) != paths.end()) {
+                std::cerr << "Duplicate location path '" << path << "' in server block #" << srvIdx << std::endl;
+                throw std::exception();
+            }
+            paths.insert(path);
+        }
+    }
     file.close();
 }
 
