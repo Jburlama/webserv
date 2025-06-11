@@ -92,6 +92,6 @@ class configValues{
     std::string get_location_root(int serverIndex, int locationIndex) const;
     bool get_location_autoindex(int serverIndex, int locationIndex) const;
 
-};
+}; 
 
 #endif

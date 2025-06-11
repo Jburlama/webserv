@@ -49,7 +49,7 @@ void configValues::defaultPreConfigs(){
 
 void configValues::defaultConfigs(ServerBlock &srv){
 	if (_howManyListen == 0)
-		srv.listen = "80";
+		srv.listen = "8000";
 	if (srv.listen == "8888" && _howManyHost == 0)
 		srv.host = "0.0.0.0";
 
@@ -222,8 +222,8 @@ void configValues::parseConfig(const std::string& configFile){
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;
-        //defaultConfigs(srvStruct);
-        //_servers.push_back(srvStruct);
+        defaultConfigs(srvStruct);
+        _servers.push_back(srvStruct);
         return ;
     }
 
