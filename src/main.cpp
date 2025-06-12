@@ -26,7 +26,7 @@ void printConfig(const configValues& config) {
 }
 
 
-int main (int argc, char *argv[])
+int main (int argc, char *argv[], char *env[])
 {
     (void)argc;
     std::vector<int> ports;
@@ -41,7 +41,7 @@ int main (int argc, char *argv[])
 
         Core core(config.get_server_blocks());
 
-        core.client_multiplex();
+        core.client_multiplex(env);
 	}
 	catch (std::runtime_error &e)
 	{
