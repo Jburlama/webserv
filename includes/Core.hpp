@@ -51,4 +51,6 @@ class Core
         bool    check_timeouts(int fd);
         void    client_multiplex();
         void    set_connection_state(bool state) {this->_client_connection = state;};
+
+        void    cleanup();
 };

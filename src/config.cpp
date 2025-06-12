@@ -8,7 +8,7 @@ configValues::configValues(std::string &configFile){
 
 
     for (std::vector<ServerBlock>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
-{
+    {
         yes = 1;
         it->addr.sin_family = AF_INET;
         it->addr.sin_port = htons(std::atoi(it->listen.c_str()));
