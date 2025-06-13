@@ -1,5 +1,4 @@
 #include "../includes/Client.hpp"
-#include <cstdio>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -74,6 +73,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     if (this->_path.empty())
                         this->_path = root + "/" + index;
 
+                    this->_path = "file_manager.py";
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
                     else 
@@ -214,7 +214,7 @@ void Client::set_response_body()
         {
             this->_response_body = new char[this->_content_length];
             if (this->_response_body == NULL)
-                throw std::runtime_error("HttpResponse.cpp:167");
+                throw std::runtime_error("HttpResponse.cpp:214");
             memset(this->_response_body, 0, this->_content_length);
             read(this->_file_fd, this->_response_body, this->_content_length);
         }
