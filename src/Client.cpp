@@ -10,13 +10,13 @@ _status(0),_is_cgi(false),_cgi_pid(-1),_cgi_stdin(-1),_cgi_stdout(-1),_cgi_bytes
 
 Client::~Client()
 {
-	if (this->_response_body) {
-        delete[] this->_response_body;
-        this->_response_body = NULL;
-    }
+	// if (this->_response_body) {
+	//        delete[] this->_response_body;
+	//        this->_response_body = NULL;
+	//    }
     // Close file descriptors if open
-    if (this->_file_fd > 0)
-        close(this->_file_fd);
+    // if (this->_file_fd > 0)
+    //     close(this->_file_fd);
 }
 
 void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &server)
@@ -71,7 +71,8 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                             break ;
                         }
                     }
-
+                    if (this->_path.empty())
+                        this->_path = root + "/" + index;
 
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
