@@ -72,8 +72,6 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		}
 		//_howManytry_files++;                              NOT SURE IF I NEED A HowMany... HERE
 	}
-	else if (key == "try_files"){
-	}
 	else {
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
 		throw std::exception();

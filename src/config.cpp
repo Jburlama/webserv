@@ -87,7 +87,8 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 		}
 		_howManyServerName++;
 	}
-	/* [0] will be the number(s) (404) [1] will be the path and so foward */         // If I have more than 1 server it will cause a segmentation fault
+
+	/* [0] will be the number(s) (404) [1] will be the path and so foward */
 	else if (key == "error_page"){
 	    std::vector<std::string> numError;
 	    std::string token;
@@ -119,7 +120,7 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 			std::cout << srv.root << std::endl; */
     	}
     	else{
-    	    std::cout << "Path does not exist!" << std::endl;
+    	    std::cout << "Path does not exist: " << srv.root << std::endl;
     	    throw std::exception();
     	}
 	}
@@ -214,11 +215,32 @@ bool configValues::detectServerBlock(std::istream& file, std::string& line, bool
 	return false; // Not a server block
 }
 
+// Compare last 7 characters
+bool configValues::last7Equals(const std::string &configFile){
+
+	if (configFile.length() >= 5){
+		std::string substring;
+		std::string checkConf = ".conf";
+
+		substring = configFile.substr(configFile.size() - 5);
+		if(substring == checkConf){
+			return true;
+		}
+	}
+    return false;
+}
+
 void configValues::parseConfig(const std::string& configFile){
     defaultPreConfigs();
 	ServerBlock srvStruct;
 	LocationBlock locStruct;
 
+	if (!last7Equals(configFile)){
+		std::cerr << "Error: Missing a file or file isn't a .conf: " << configFile << std::endl;
+        defaultConfigs(srvStruct);
+        _servers.push_back(srvStruct);
+		return ;
+	}
     std::ifstream file(configFile.c_str());
     if (!file.is_open()){
         std::cerr << "Error: Unable to open config file: " << configFile << std::endl;

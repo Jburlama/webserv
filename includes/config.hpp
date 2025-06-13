@@ -67,6 +67,8 @@ class configValues{
     bool detectServerBlock(std::istream& file, std::string& line, bool& insideServerBlock); //Check if it's a server block
     bool detectLocationBlock(std::istream& file, std::string& line, bool& insideServerBlock, LocationBlock &loc); //Check if it's a location block
 
+	bool last7Equals(const std::string &configFile);
+
 	public:
 		configValues(std::string &configFile);
 		~configValues();
