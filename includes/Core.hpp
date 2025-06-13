@@ -18,7 +18,6 @@
 #include "webserv.hpp"
 #include "HttpResponse.hpp"
 #include "Client.hpp"
-#include "Server.hpp"
 #include "File.hpp"
 #include "Log.hpp"
 #include "config.hpp"

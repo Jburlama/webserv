@@ -38,8 +38,10 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, Se
 
                 case PATH:
                     this->_path = this->_parse_path(i, str);
+
                     // TODO: Fix when the config file is added
                     this->_path = servers[this->_server_fd].root + "/" + servers[this->_server_fd].index;
+
                     this->_parser_state = VERSION;
                     break ;
 
