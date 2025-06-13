@@ -6,7 +6,7 @@ NAME = webserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++98
 CFILES = main.cpp Core.cpp HttpRequest.cpp HttpResponse.cpp \
-		 Server.cpp Client.cpp File.cpp Log.cpp config.cpp configLocation.cpp
+		 Client.cpp File.cpp Log.cpp config.cpp configLocation.cpp
 
 OBJS_DIR = ./objs/
 SRC_DIR = ./src/

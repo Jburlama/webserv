@@ -42,8 +42,7 @@ struct ServerBlock{
     std::string                index;
     std::vector<LocationBlock> locations;
 
-    ServerBlock() : listen("8000"), host("0.0.0.0"), serverName("webserv"), clientMaxBodySize("1024"),
-        root("./www"), index("index.html") {}
+    ServerBlock():listen("8000"),serverName("localhost") {}
 };
 
 class configValues{
