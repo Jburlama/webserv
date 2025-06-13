@@ -9,13 +9,6 @@ _status(0)
 
 Client::~Client()
 {
-	if (this->_response_body) {
-        delete[] this->_response_body;
-        this->_response_body = NULL;
-    }
-    // Close file descriptors if open
-    if (this->_file_fd > 0)
-        close(this->_file_fd);
 }
 
 void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, ServerBlock> &servers)
