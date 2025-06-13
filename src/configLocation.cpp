@@ -14,7 +14,8 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		}
 		_howManyIndex_location++;
 	}
-	else if (key == "allow_methods") {
+	else if (key == "allow_methods"){
+		loc.allow_methods = key;
 		while (iss >> key) {
 			if (!loc.allow_methods.empty()) loc.allow_methods += " ";
 			loc.allow_methods += key;
@@ -59,15 +60,39 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 		else if (value == "off;" || value == "off") {
 			loc.autoindex = false;
 		}
-		else {
+		else{
 			throw std::runtime_error("Invalid value for location_autoindex: expected 'on' or 'off'");
 		}
 		_howManyAutoindex++;
+	}
+	else if (key == "try_files"){
+		while (iss >> key) {
+			if (!loc.try_files.empty()) loc.try_files += " ";
+			loc.try_files += key;
+		}
+		//_howManytry_files++;                              NOT SURE IF I NEED A HowMany... HERE
 	}
 	else {
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
 		throw std::exception();
 	}
+
+	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_ext > 1 ||  _howManyCgi_pass > 1 || 
+		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){	
+		std::cerr << "There are duplicates keywords in the configuration file (in location's block)" << std::endl;
+		throw std::exception();
+	} 
+}
+
+void configValues::resetLocationCounters() {
+    _howManyIndex_location = 0;
+    _howManyAllow_methods = 0;
+    _howManyUpload_store = 0;
+    _howManyCgi_pass = 0;
+    _howManyCgi_path = 0;
+    _howManyCgi_ext = 0;
+    _howManyRoot_location = 0;
+    _howManyAutoindex = 0;
 }
 
 bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock, LocationBlock &loc){
@@ -92,6 +117,16 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 
 		if (keyword == "location" && !second.empty()){
 			loc.path = second;
+    		if (access(loc.path.c_str(), F_OK) == 0){
+    		    /* std::cout << "Path exists!\n"; */
+				/* std::cout << loc.path << std::endl; */
+    		}
+    		else{
+				loc.path = "";
+    		    std::cout << "Path does not exist!" << std::endl;
+    		    throw std::exception();
+    		}
+
 			if (!insideLocationBlock){
 				insideLocationBlock = true;
 				if (!afterBrace.empty())
@@ -112,11 +147,24 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	}
 	else if (line.find("location") == 0){
 		std::istringstream iss(line);
-		std::string keyword, invalid;
+		std::string keyword, path;
 
-		if (keyword.empty()){
+		iss >> keyword >> path;
+		if (path.empty()){
 			std::cout << "Missing text after location's keyword/s: " << line << std::endl;
 			throw std::exception();
+		}
+		else{
+			loc.path = path;
+    		if (access(loc.path.c_str(), F_OK) == 0){
+    		    /* std::cout << "Path exists!\n";
+				std::cout << loc.path << std::endl; */
+    		}
+    		else{
+				loc.path = "";
+    		    std::cout << "Path does not exist!" << std::endl;
+    		    throw std::exception();
+    		}
 		}
 
 		std::string nextLine;
@@ -131,7 +179,6 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 				if (!insideLocationBlock){
 					insideLocationBlock = true;
 
-					std::cout << nextLine << ";" << std::endl;
 					std::string restOfLine = nextLine.substr(1);
 					restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
 					restOfLine.erase(restOfLine.find_last_not_of(" \t") + 1);
@@ -153,11 +200,9 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 	return false; // Not a location block   
 }
 
-void configValues::parseLocatePart(std::istream &file, std::string &line, std::string &unmodifiedLine, ServerBlock &srv) {
+void configValues::parseLocatePart(std::istream &file, std::string &line, ServerBlock &srv, LocationBlock &loc) {
     bool insideLocationBlock = false;
-	LocationBlock loc;
 
-	(void)unmodifiedLine;
     do {
         // Remove comments
         size_t commentPos = line.find('#');
@@ -174,6 +219,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
         // Detect the start of the location block
         if (detectLocationBlock(file, line, insideLocationBlock, loc)) {
 			_numOfLocInSrvBlock++;
+			resetLocationCounters();
             if (line.empty())
                 continue;
         }
@@ -203,6 +249,7 @@ void configValues::parseLocatePart(std::istream &file, std::string &line, std::s
             }
             insideLocationBlock = false;
 			srv.locations.push_back(loc);
+			loc = LocationBlock();
             // Done with this block
             return;
         }

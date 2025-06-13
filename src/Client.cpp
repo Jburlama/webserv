@@ -9,6 +9,13 @@ _status(0)
 
 Client::~Client()
 {
+	if (this->_response_body) {
+        delete[] this->_response_body;
+        this->_response_body = NULL;
+    }
+    // Close file descriptors if open
+    if (this->_file_fd > 0)
+        close(this->_file_fd);
 }
 
 void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, ServerBlock> &servers)
@@ -68,7 +75,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, Se
                     if (this->_request_headers.find("Content-Length") != this->_request_headers.end())
                         body_size = std::atoi(this->_request_headers["Content-Length"][0].c_str());
                     else if (this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
-                        std::cout << "Transfer-Enconding\n";
+                        std::cout << "Transfer-Enconding\n" << std::flush;
 
                     while(i < bytes)
                         this->_request_body.insert(this->_request_body.end(), buffer[i++]);
@@ -122,7 +129,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, Se
             this->set_parser_state(START);
         }
         else
-            std::cout << error_msg << "\n";
+            std::cout << error_msg << "\n" << std::flush;
     }
 }
 
@@ -187,7 +194,7 @@ void Client::set_file(const char *file_path)
     }
 
     if (S_ISDIR(this->_file_stats.st_mode)) // TODO: expand this if file_path is a dir
-        std::cout << "This is a directory\n";
+        std::cout << "This is a directory\n" << std::flush;
 
     file_fd = open(file.c_str(), O_RDONLY); // Opens the file for read mode
     if (file_fd == -1) // Don't have permition to open file
