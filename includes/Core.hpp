@@ -6,6 +6,8 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <fstream>
 #include <fcntl.h>
 #include <iostream>
@@ -14,6 +16,8 @@
 #include <map>
 #include <utility>
 #include <cstdlib>
+#include <unistd.h>
+#include <unistd.h>
 
 #include "webserv.hpp"
 #include "HttpResponse.hpp"
@@ -43,13 +47,16 @@ class Core
         void    get_client(int server_fd);
         bool    get_connection_state() {return this->_client_connection;};
 
-        void    build_request(int client_fd);
+        void    build_request(int client_fd, char **env);
         void    build_response(int client_fd);
+        void    handle_cgi_output(Client &client);
         void    handle_write(int client_fd);
         void    close_client(const int fd);
         bool    check_timeouts(int fd);
-        void    client_multiplex();
+        void    client_multiplex(char **env);
         void    set_connection_state(bool state) {this->_client_connection = state;};
 
         void    cleanup();
+        void    execute_cgi(Client &client, char **env);
+        void    check_cgi_output(Client &client);
 };

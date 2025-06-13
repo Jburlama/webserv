@@ -27,8 +27,7 @@ struct LocationBlock{
   //std::string redirect;
   bool autoindex;												// If on, show a directory listing if no index file is found; if off, do not.
 
-  LocationBlock() : path("/"), index("index.html"), allow_methods("GET"), //This might be like allow_methods = "GET GET POST" I can use a function for the defaults like I use too
-                    root("./www"), autoindex(false) {}
+  LocationBlock() {};
 };
 
 struct ServerBlock{
@@ -43,8 +42,7 @@ struct ServerBlock{
     std::string                index;
     std::vector<LocationBlock> locations;
 
-    ServerBlock() : listen("8000"), host("0.0.0.0"), serverName("webserv"), clientMaxBodySize("1024"),
-        root("./www"), index("index.html") {}
+    ServerBlock():listen("8000"),serverName("localhost") {}
 };
 
 class configValues{

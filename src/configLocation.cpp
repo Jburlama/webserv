@@ -117,15 +117,6 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 
 		if (keyword == "location" && !second.empty()){
 			loc.path = second;
-    		if (access(loc.path.c_str(), F_OK) == 0){
-    		    /* std::cout << "Path exists!\n"; */
-				/* std::cout << loc.path << std::endl; */
-    		}
-    		else{
-				loc.path = "";
-    		    std::cout << "Path does not exist!" << std::endl;
-    		    throw std::exception();
-    		}
 
 			if (!insideLocationBlock){
 				insideLocationBlock = true;

@@ -1,8 +1,9 @@
 #include "../includes/Client.hpp"
+#include <cstdio>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
-_status(0)
+_status(0),_is_cgi(false),_cgi_pid(-1),_cgi_stdin(-1),_cgi_stdout(-1),_cgi_bytes_read(-1)
 {
     this->set_last_activity();
 }
@@ -18,11 +19,15 @@ Client::~Client()
         close(this->_file_fd);
 }
 
-void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, ServerBlock> &servers)
+void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &server)
 {
     try
     {
         const char *str = &buffer[0];
+        std::string url;
+        std::string root;
+        std::string index;
+        std::string temp;
 
         for (int i = 0; i < bytes + 1; ++i)
         {
@@ -44,10 +49,34 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, std::map<int, Se
                     break;
 
                 case PATH:
-                    this->_path = this->_parse_path(i, str);
+                    url = this->_parse_path(i, str);
+                    if (!server.root.empty())
+                        root = server.root;
+                    if (!server.index.empty())
+                        index = server.index;
 
-                    // TODO: Fix when the config file is added
-                    this->_path = servers[this->_server_fd].root + "/" + servers[this->_server_fd].index;
+                    for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                    {
+                        if (url == it->path)
+                        {
+                            if (!it->root.empty())
+                                this->_path = it->root;
+                            else
+                                this->_path = root;
+                            if (!it->index.empty())
+                                this->_path += "/" + it->index;
+                            else
+                                this->_path += "/" + index;
+
+                            break ;
+                        }
+                    }
+
+
+                    if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
+                        this->set_is_cgi(true);
+                    else 
+                        this->set_is_cgi(false);
 
                     this->_parser_state = VERSION;
                     break ;
@@ -149,7 +178,7 @@ void Client::set_response()
         this->set_connection(headers["Connection"][0]);
     else
         this->set_connection("keep-alive");
-    this->set_response_body(); // Reads and Closes the file fd
+    this->set_response_body(); // Reads and Closes the file fd or build from CGI
     if (this->_content_length != 0)
         this->set_status_code(this->get_status());
     else
@@ -158,18 +187,36 @@ void Client::set_response()
     return ;
 }
 
-// We close the file in Core::build_request, to also remove from fd_set
 void Client::set_response_body()
 {
-    this->_content_length = this->_file_stats.st_size;
-
-    if (this->_content_length > 0)
+    if (this->get_client_state() == BUILD_RESPONSE_FROM_CGI)
     {
-        this->_response_body = new char[this->_content_length];
-        if (this->_response_body == NULL)
-            throw std::runtime_error("HttpResponse.cpp:167");
-        memset(this->_response_body, 0, this->_content_length);
-        read(this->_file_fd, this->_response_body, this->_content_length);
+        this->_content_length = this->_cgi_output.size();
+
+        if (this->_content_length > 0)
+        {
+            this->_response_body = new char[this->_content_length];
+            if (this->_response_body == NULL)
+                throw std::runtime_error("HttpResponse.cpp:168");
+            memset(this->_response_body, 0, this->_content_length);
+
+            for (size_t i = 0; i < this->_content_length; ++i)
+                this->_response_body[i] = this->_cgi_output[i];
+            this->_cgi_output.clear();
+        }
+    }
+    else  // We close the file in Core::build_request, to also remove from fd_set
+    {
+        this->_content_length = this->_file_stats.st_size;
+
+        if (this->_content_length > 0)
+        {
+            this->_response_body = new char[this->_content_length];
+            if (this->_response_body == NULL)
+                throw std::runtime_error("HttpResponse.cpp:167");
+            memset(this->_response_body, 0, this->_content_length);
+            read(this->_file_fd, this->_response_body, this->_content_length);
+        }
     }
 }
 
