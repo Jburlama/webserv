@@ -49,31 +49,27 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
 
                 case PATH:
                     url = this->_parse_path(i, str);
-                    if (!server.root.empty())
-                        root = server.root;
-                    if (!server.index.empty())
-                        index = server.index;
+                    root = server.root;
+                    index = server.index;
 
                     for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
                         if (url == it->path)
                         {
+                            std::cout << "Index in Location: ";
+                            std::cout << it->index << "\n";
                             if (!it->root.empty())
-                                this->_path = it->root;
-                            else
-                                this->_path = root;
+                                root = it->root;
                             if (!it->index.empty())
-                                this->_path += "/" + it->index;
-                            else
-                                this->_path += "/" + index;
-
+                                index = it->index;
+                            std::cout << "Index: " << index << "\n";
                             break ;
                         }
                     }
-                    if (this->_path.empty())
-                        this->_path = root + "/" + index;
+                    this->_path = root + "/" + index;
 
-                    this->_path = "file_manager.py";
+                    std::cout << "Path: " << this->_path << "\n";
+
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
                     else 

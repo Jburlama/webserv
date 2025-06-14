@@ -6,7 +6,6 @@ configValues::configValues(std::string &configFile){
 
     int     yes;
 
-
     for (std::vector<ServerBlock>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
     {
         yes = 1;
