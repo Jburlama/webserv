@@ -41,6 +41,9 @@ void HttpResponse::set_response_header()
         case 204:
             this->_response_header += "204 " + this->_description + "\r\n";
             break ;
+        case 302:
+            this->_response_header += "302 " + this->_description + "\r\n";
+            break ;
         case 400:
             this->_response_header += "400 " + this->_description + "\r\n";
             break ;
@@ -92,6 +95,9 @@ void HttpResponse::set_status_code(int code)
             break ;
         case 204:
             this->_description = "No Content";
+            break ;
+        case 302:
+            this->_description = "Found";
             break ;
         case 400:
             this->_description = "Bad Request";

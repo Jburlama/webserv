@@ -1,5 +1,6 @@
 #include "../includes/Client.hpp"
 #include <cstddef>
+#include <stdexcept>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -28,8 +29,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         std::string root;
         std::string index;
         std::string temp;
-        size_t      content_lenght;
-        size_t      server_max_body_lenght;
+        int         status;
 
         for (int i = 0; i < bytes + 1; ++i)
         {
@@ -57,7 +57,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
 
                     for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
-                        if (url == it->path)
+                        if (url == it->path || url == "/upload")
                         {
                             if (!it->root.empty())
                                 root = it->root;
@@ -87,14 +87,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     if (this->_request_headers.find("Content-Length") != this->_request_headers.end() ||
                         this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
                     {  
-                        content_lenght = std::atoi(this->_request_headers["Content-Length"][0].c_str());
-                        server_max_body_lenght = std::atoi(server.clientMaxBodySize.c_str());
-                        if (content_lenght > server_max_body_lenght)
-                        {
-                            this->_status = 413;
-                            this->set_parser_state(START);
-                            return ;
-                        }
+                        this->set_parser_state(START);
                         this->_parser_state = BODY;
                     }
                     else
@@ -111,8 +104,12 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     else if (this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
                         std::cout << "Transfer-Enconding\n" << std::flush;
 
+                    if (body_size > static_cast<size_t>(std::atoi(server.clientMaxBodySize.c_str())))
+                        throw std::logic_error("413");
+
                     while(i < bytes)
                         this->_request_body.insert(this->_request_body.end(), buffer[i++]);
+
 
                     this->set_bytes_read(i + this->get_bytes_read());
                     if (this->get_bytes_read() < body_size)
@@ -122,17 +119,19 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     }
                     else
                     {
-                        this->_parse_request_body();
-                        this->set_status(201);
+                        status = this->_parse_request_body();
+                        this->set_status(status);
                         this->_parser_state = END;
                         this->set_parser_state(START);
-                        this->set_has_body(true);
+                        if (status == 201)
+                            this->set_has_body(true);
+                        else if (status == 302)
+                            this->set_has_body(false);
                         this->set_upload_length(body_size);
                         this->_request_body.clear();
                         return ;
                     }
 
-                    this->set_has_body(true);
                     break ;
 
                 case END:
@@ -160,6 +159,12 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         {
             this->_path = "content/html/error_pages/505_HTTP_Version_Not_Supported.html";
             this->_status = 505;
+            this->set_parser_state(START);
+        }
+        else if (error_msg.compare("413") == 0)
+        {
+            this->_path = "/home/jhonas/42/webserv/content/html/error_pages/413_Request_Entity_Too_Large.html";
+            this->_status = 413;
             this->set_parser_state(START);
         }
         else

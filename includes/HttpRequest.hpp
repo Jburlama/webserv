@@ -43,7 +43,7 @@ class HttpRequest
         std::string                                         _parse_path(int &i, const char *str);
         std::string                                         _parse_request_version(int &i, const char *str);
         std::map<std::string, std::vector<std::string> >    _parse_request_header(int &i, const char *str);
-        void                                                _parse_request_body();
+        int                                                _parse_request_body();
 
     public:
         HttpRequest():_parser_state(START),_has_body(false) {};
