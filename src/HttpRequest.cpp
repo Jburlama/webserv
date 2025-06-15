@@ -62,7 +62,7 @@ void HttpRequest::_parse_request_body()
             throw std::logic_error("Multipart header end not found");
         
         file_start = header_end + 4;  // Skip \r\n\r\n
-        file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
+        file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)
 
         // Write to file
          std::ofstream out_file(filename.c_str(), std::ios::binary);

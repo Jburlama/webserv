@@ -1,4 +1,5 @@
 #include "../includes/Client.hpp"
+#include <cstddef>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -27,6 +28,8 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         std::string root;
         std::string index;
         std::string temp;
+        size_t      content_lenght;
+        size_t      server_max_body_lenght;
 
         for (int i = 0; i < bytes + 1; ++i)
         {
@@ -56,19 +59,14 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     {
                         if (url == it->path)
                         {
-                            std::cout << "Index in Location: ";
-                            std::cout << it->index << "\n";
                             if (!it->root.empty())
                                 root = it->root;
                             if (!it->index.empty())
                                 index = it->index;
-                            std::cout << "Index: " << index << "\n";
                             break ;
                         }
                     }
                     this->_path = root + "/" + index;
-
-                    std::cout << "Path: " << this->_path << "\n";
 
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
@@ -88,7 +86,17 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     --i;
                     if (this->_request_headers.find("Content-Length") != this->_request_headers.end() ||
                         this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
+                    {  
+                        content_lenght = std::atoi(this->_request_headers["Content-Length"][0].c_str());
+                        server_max_body_lenght = std::atoi(server.clientMaxBodySize.c_str());
+                        if (content_lenght > server_max_body_lenght)
+                        {
+                            this->_status = 413;
+                            this->set_parser_state(START);
+                            return ;
+                        }
                         this->_parser_state = BODY;
+                    }
                     else
                         this->_parser_state = END;
                     this->set_bytes_read(i);

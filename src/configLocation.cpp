@@ -1,5 +1,4 @@
 #include "../includes/config.hpp"
-#include <iostream>
 
 void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &loc) {
 	std::istringstream iss(statement);
@@ -7,7 +6,7 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 	iss >> key;
 
 	if (key == "index") {
-		iss >> key;
+		iss >> loc.index;
 		while (iss >> key) {
 			if (!loc.index.empty()) loc.index += " ";
 			loc.index += key;

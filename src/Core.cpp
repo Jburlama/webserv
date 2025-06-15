@@ -152,7 +152,8 @@ void Core::build_request(int client_fd, char **env)
         else
         {
             client.set_client_state(BUILD_RESPONSE);
-            client.set_file(client.get_path().c_str()); // For response body, eg. index.html
+            if (client.get_method() == "GET")
+                client.set_file(client.get_path().c_str()); // For response body, eg. index.html
             if (client.get_file_bytes() != 0) // File is not empty, if it was fd was alreay closed in set_file()
             {
                 // we add to the set here bc the read_set master is in the Core class
@@ -250,6 +251,7 @@ void Core::handle_write(int client_fd)
                     Log::rm_from_write(client_fd);
                     FD_SET(client_fd, &this->_read_set);
                     Log::on_read(client_fd);
+                    client.set_file_bytes(0);
                 }
             }
             bytes_sent += bytes;

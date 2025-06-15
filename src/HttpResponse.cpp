@@ -50,6 +50,9 @@ void HttpResponse::set_response_header()
         case 404:
             this->_response_header += "404 " + this->_description + "\r\n";
             break ;
+        case 413:
+            this->_response_header += "413 " + this->_description + "\r\n";
+            break ;
         case 505:
             this->_response_header += "505 " + this->_description + "\r\n";
             break ;
@@ -98,6 +101,9 @@ void HttpResponse::set_status_code(int code)
             break ;
         case 404:
             this->_description = "Not Found";
+            break ;
+        case 413:
+            this->_description = "Request Entity Too Large";
             break ;
         case 505:
             this->_description = "HTTP Version Not Supported";
