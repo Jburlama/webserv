@@ -1,5 +1,4 @@
 #include "../includes/Client.hpp"
-#include <cstdio>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -10,6 +9,13 @@ _status(0),_is_cgi(false),_cgi_pid(-1),_cgi_stdin(-1),_cgi_stdout(-1),_cgi_bytes
 
 Client::~Client()
 {
+	// if (this->_response_body) {
+	//        delete[] this->_response_body;
+	//        this->_response_body = NULL;
+	//    }
+    // Close file descriptors if open
+    // if (this->_file_fd > 0)
+    //     close(this->_file_fd);
 }
 
 void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &server)
@@ -42,30 +48,76 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     break;
 
                 case PATH:
+                {
                     url = this->_parse_path(i, str);
-                    if (!server.root.empty())
-                        root = server.root;
-                    if (!server.index.empty())
-                        index = server.index;
+                    root = server.root;
+                    index = server.index;
+                    std::string matched_prefix = "";
+                    size_t matched_length = 0;
 
+                    // Longest prefix match among all locations
                     for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
-                        if (url == it->path)
+                        if (url.compare(0, it->path.length(), it->path) == 0 && it->path.length() > matched_length)
                         {
+                            matched_prefix = it->path;          //What is the prefix (location prefix {)
+                            matched_length = it->path.length(); //What is the length of the prefir, by other words, /in (length 3)  /index (lenght 6)
+                        
                             if (!it->root.empty())
-                                this->_path = it->root;
+                                root = it->root;
                             else
-                                this->_path = root;
+                                root = server.root;
+                        
                             if (!it->index.empty())
-                                this->_path += "/" + it->index;
+                                index = it->index;
                             else
-                                this->_path += "/" + index;
+                                index = server.index;
+                        }
+                    }
 
+                    std::cout << matched_prefix << " " << matched_length << std::endl; //testing if its getting the appropriate location block
+
+                    // Build the path relative to the matched location prefix
+                    std::string relative_path = url.substr(matched_prefix.length());
+                    std::cout << relative_path << std::endl;
+                    if (!relative_path.empty() && relative_path[0] == '/')
+                        relative_path = relative_path.substr(1);
+
+                    std::string full_path = root;
+                    if (!relative_path.empty())
+                        full_path += "/" + relative_path;
+
+                    // If the resolved path is a directory, append index
+                    struct stat path_stat;
+                    if (stat(full_path.c_str(), &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) // If path exists && is a directory
+                    {
+                        if (!full_path.empty() && full_path[full_path.size() - 1] != '/') //add a '/' if its not there already to avoid (Ex: "var/www/htmlindex.html")
+                            full_path += "/";
+                        full_path += index;
+                    }
+
+                    this->_path = full_path;
+                    std::cout << "Path: " << this->_path << std::endl;
+
+                    /* for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                    {
+                        std::cout << url << std::endl;
+                        std::cout << it->path << std::endl;
+                        if (url.compare(0, it->path.length(), it->path) == 0 && it->path.length() > matched_length)
+                        {
+                            std::cout << "Index in Location: ";
+                            std::cout << it->index << "\n";
+                            if (!it->root.empty())
+                                root = it->root; // Use location's root if it's set
+                            if (!it->index.empty())
+                                index = it->index; // Use location's index if it's set
+                            std::cout << "Index: " << index << "\n";
                             break ;
                         }
                     }
-                    if (this->_path.empty())
-                        this->_path = root + "/" + index;
+                    this->_path = root + "/" + index;
+
+                    std::cout << "Path: " << this->_path << "\n"; */
 
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
@@ -74,7 +126,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
 
                     this->_parser_state = VERSION;
                     break ;
-
+                }
                 case VERSION:
                     this->_request_version = this->_parse_request_version(i, str);
                     this->_parser_state = HEADER;
@@ -207,7 +259,7 @@ void Client::set_response_body()
         {
             this->_response_body = new char[this->_content_length];
             if (this->_response_body == NULL)
-                throw std::runtime_error("HttpResponse.cpp:167");
+                throw std::runtime_error("HttpResponse.cpp:214");
             memset(this->_response_body, 0, this->_content_length);
             read(this->_file_fd, this->_response_body, this->_content_length);
         }

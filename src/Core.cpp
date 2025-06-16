@@ -24,6 +24,10 @@ Core::Core(std::vector<ServerBlock> server_blocks)
     }
 }
 
+/* void Core::cleanup() {
+    this->_clients.clear();
+} */
+
 // Accepts client connection to the given server
 void Core::get_client(int server_fd)
 {

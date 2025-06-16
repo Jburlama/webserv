@@ -24,10 +24,11 @@ struct LocationBlock{
   std::string cgi_ext;											// File extensions that should trigger the CGI, (Example .py, .sh)
   std::string root;												// Filesystem path that corresponds to this URL path (e.g., where to look for content)
   std::string try_files;										// If on, show a directory listing if no index file is found; if off, do not.
+  std::string returnLoc;
   //std::string redirect;
   bool autoindex;												// If on, show a directory listing if no index file is found; if off, do not.
 
-  LocationBlock() {}
+  LocationBlock() {};
 };
 
 struct ServerBlock{
@@ -42,7 +43,8 @@ struct ServerBlock{
     std::string                index;
     std::vector<LocationBlock> locations;
 
-    ServerBlock():listen("8000"),serverName("localhost") {}
+    ServerBlock():listen("8000"),serverName("localhost"),root("/home/jhonas/42/webserv/content/html"),
+                index("default.html"){}
 };
 
 class configValues{
@@ -51,7 +53,7 @@ class configValues{
     int _numOfLocInSrvBlock;
 
     int _howManyListen, _howManyHost, _howManyServerName, _howManyErrorMessage, _howManyClient, _howManyRoot, _howManyIndex; // Check for douplicate
-    int _howManyIndex_location, _howManyAllow_methods, _howManyUpload_store, _howManyCgi_pass, _howManyCgi_path, _howManyCgi_ext, _howManyRoot_location, _howManyAutoindex;
+    int _howManyIndex_location, _howManyAllow_methods, _howManyUpload_store, _howManyCgi_pass, _howManyCgi_path, _howManyCgi_ext, _howManyRoot_location, _howManyAutoindex, _howManyReturn, _howManytry_files;
 
 	void parseConfig(const std::string& configFile);
     void parseLocatePart(std::istream &file, std::string &statement, ServerBlock &srv, LocationBlock &loc);

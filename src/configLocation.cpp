@@ -6,8 +6,9 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 	std::string key;
 	iss >> key;
 
+
 	if (key == "index") {
-		iss >> key;
+		iss >> loc.index;
 		while (iss >> key) {
 			if (!loc.index.empty()) loc.index += " ";
 			loc.index += key;
@@ -70,7 +71,15 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 			if (!loc.try_files.empty()) loc.try_files += " ";
 			loc.try_files += key;
 		}
-		//_howManytry_files++;                              NOT SURE IF I NEED A HowMany... HERE
+		_howManytry_files++;
+	}
+	else if (key == "return"){
+		while (iss >> key) {
+			if (!loc.returnLoc.empty()) loc.returnLoc += " ";
+			loc.returnLoc += key;
+		}
+		_howManyReturn++;
+		std::cout << loc.returnLoc << std::endl;
 	}
 	else {
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
@@ -78,7 +87,7 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 	}
 
 	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_ext > 1 ||  _howManyCgi_pass > 1 || 
-		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1){	
+		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1 || _howManyReturn > 1 || _howManytry_files > 1){	
 		std::cerr << "There are duplicates keywords in the configuration file (in location's block)" << std::endl;
 		throw std::exception();
 	} 
@@ -93,6 +102,7 @@ void configValues::resetLocationCounters() {
     _howManyCgi_ext = 0;
     _howManyRoot_location = 0;
     _howManyAutoindex = 0;
+	_howManyReturn = 0;
 }
 
 bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock, LocationBlock &loc){
@@ -147,6 +157,15 @@ bool configValues::detectLocationBlock(std::istream& file, std::string& line, bo
 		}
 		else{
 			loc.path = path;
+    		if (access(loc.path.c_str(), F_OK) == 0){
+    		    /* std::cout << "Path exists!\n";
+				std::cout << loc.path << std::endl; */
+    		}
+    		else{
+				loc.path = "";
+    		    std::cout << "Path does not exist!" << std::endl;
+    		    throw std::exception();
+    		}
 		}
 
 		std::string nextLine;

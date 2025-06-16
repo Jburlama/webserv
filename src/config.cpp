@@ -6,7 +6,6 @@ configValues::configValues(std::string &configFile){
 
     int     yes;
 
-
     for (std::vector<ServerBlock>::iterator it = this->_servers.begin(); it != this->_servers.end(); ++it)
     {
         yes = 1;
@@ -42,6 +41,7 @@ void configValues::defaultPreConfigs(){
 	_howManyCgi_ext = 0;
 	_howManyRoot_location = 0;
 	_howManyAutoindex = 0;
+    _howManyReturn = 0;
 
 	
 	_numOfLocInSrvBlock = -1;
