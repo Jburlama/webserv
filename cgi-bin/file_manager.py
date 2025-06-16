@@ -2,7 +2,7 @@
 
 import os
 import cgi
-import shutil
+import html
 import sys
 
 UPLOAD_DIR = "upload"
@@ -34,18 +34,6 @@ def save_uploaded_file(file_item):
             f.write(chunk)
     return f"Uploaded: {filename}"
 
-def delete_file(filename):
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    
-    # Prevent path traversal
-    if not os.path.abspath(filepath).startswith(os.path.abspath(UPLOAD_DIR)):
-        return "Invalid filename"
-    
-    if os.path.exists(filepath):
-        os.remove(filepath)
-        return f"Deleted: {filename}"
-    return "File not found"
-
 # Main CGI processing
 form = cgi.FieldStorage()
 action = form.getvalue('action')
@@ -56,12 +44,8 @@ if action == 'upload':
     file_item = form['file']
     if file_item.filename:
         message = save_uploaded_file(file_item)
-elif action == 'delete':
-    filename = form.getvalue('filename')
-    if filename:
-        message = delete_file(filename)
 
-# Output HTML response (body only)
+# Output HTML response
 print(f"""
 <!DOCTYPE html>
 <html>
@@ -74,11 +58,35 @@ print(f"""
         .actions {{ display: flex; gap: 10px; }}
         .message {{ padding: 10px; background: #f0f0f0; margin: 20px 0; }}
     </style>
+    <script>
+        async function deleteFile(filename) {{
+            if (!confirm('Are you sure you want to delete ' + filename + '?')) {{
+                return;
+            }}
+            
+            try {{
+                const response = await fetch('/upload/' + encodeURIComponent(filename), {{
+                    method: 'DELETE'
+                }});
+                
+                if (response.ok) {{
+                    const result = await response.text();
+                    alert(result);
+                    location.reload(); // Refresh page after deletion
+                }} else {{
+                    const error = await response.text();
+                    throw new Error(error || 'Deletion failed');
+                }}
+            }} catch (error) {{
+                alert('Error: ' + error.message);
+            }}
+        }}
+    </script>
 </head>
 <body>
     <h1>File Manager</h1>
     
-    {f'<div class="message">{message}</div>' if message else ''}
+    {f'<div class="message">{html.escape(message)}</div>' if message else ''}
     
     <h2>Upload File</h2>
     <form method="post" enctype="multipart/form-data">
@@ -90,24 +98,15 @@ print(f"""
     <table>
         <tr>
             <th>Filename</th>
-            <th>Actions</th>
         </tr>
 """)
 
 # List files with actions
 for filename in list_files():
+    safe_filename = html.escape(filename)
     print(f"""
         <tr>
-            <td>{filename}</td>
-            <td class="actions">
-                <a href="{os.path.join(UPLOAD_DIR, filename)}" download>
-                    <button>Download</button>
-                </a>
-                <form method="post" style="display: inline">
-                    <input type="hidden" name="filename" value="{filename}">
-                    <input type="submit" name="action" value="delete">
-                </form>
-            </td>
+            <td>{safe_filename}</td>
         </tr>
     """)
 

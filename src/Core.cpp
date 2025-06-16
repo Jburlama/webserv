@@ -336,7 +336,7 @@ void    Core::execute_cgi(Client &client, char **env)
         char** cgi_envp = env;
 
         // Execute CGI
-        std::string script_path = "./cgi-bin/" + client.get_path();
+        std::string script_path = client.get_path();
         const char* argv[] = {script_path.c_str(), NULL};
 
         execve(script_path.c_str(), const_cast<char**>(argv), cgi_envp);

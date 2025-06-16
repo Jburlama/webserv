@@ -1,6 +1,7 @@
 #include "../includes/Client.hpp"
 #include <cstddef>
 #include <stdexcept>
+#include <cstdio>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -47,15 +48,22 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     
                 case METHOD:
                     this->_method = this->_parse_method(i, str);
+                    std::cout << "Method: " << this->_method << "\n";
                     this->_parser_state = PATH;
                     break;
 
                 case PATH:
+                    this->set_is_cgi(false);
                     root = server.root;
                     index = server.index;
                     url = this->_parse_path(i, str);
-                    std::cout << "Url: " << url << "\n";
                 
+                    if (this->_method == "DELETE")
+                    {
+                        std::string file_to_remove = "upload" + url;
+                        std::cout << "File to remove: " << file_to_remove << "\n";
+                        std::remove(file_to_remove.c_str());
+                    }
                     if (url.find(".") == std::string::npos) // url is the location paht
                     {
                         for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
@@ -69,10 +77,11 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                                 break ;
                             }
                             else
-                            index = "error_pages/404_not_found.html";
+                                index = "error_pages/404_not_found.html";
                         }
+                        this->_path = root + "/" + index;
                     }
-                    else // File is in url
+                    else// File is in url
                     {
                         std::string::size_type pos = url.find_last_of('/');
                         index = url.substr(pos + 1);
@@ -80,14 +89,24 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                             url = "/";
                         else
                             url = url.substr(0, pos);
+                        if (index.substr(index.length() - 3).compare(".py") == 0)
+                        {
+                            this->_path = root + "/" + "error_pages/404_not_found.html";
+                            for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                            {
+                                if (it->path == "/cgi-bin" && it->index == index)
+                                {
+                                    this->_path = "cgi-bin/" + index;
+                                    this->set_is_cgi(true);
+                                }
+                            }
+                        }
+                        else 
+                            this->_path = root + "/" + index;
                     }
-                    this->_path = root + "/" + index;
 
-                    if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
-                        this->set_is_cgi(true);
-                    else 
-                        this->set_is_cgi(false);
 
+                    std::cout << "Path: " << this->_path << "\n";
                     this->_parser_state = VERSION;
                     break ;
 
@@ -108,6 +127,11 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     else
                         this->_parser_state = END;
                     this->set_bytes_read(i);
+                    if (this->get_is_cgi())
+                    {
+                        this->_status = 302;
+                        return ;
+                    }
                     break ;
 
                 case BODY:
