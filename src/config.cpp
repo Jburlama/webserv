@@ -42,6 +42,7 @@ void configValues::defaultPreConfigs(){
 	_howManyRoot_location = 0;
 	_howManyAutoindex = 0;
     _howManyReturn = 0;
+    _howManyTry_files = 0;
 
 	
 	_numOfLocInSrvBlock = -1;

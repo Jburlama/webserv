@@ -53,7 +53,7 @@ class configValues{
     int _numOfLocInSrvBlock;
 
     int _howManyListen, _howManyHost, _howManyServerName, _howManyErrorMessage, _howManyClient, _howManyRoot, _howManyIndex; // Check for douplicate
-    int _howManyIndex_location, _howManyAllow_methods, _howManyUpload_store, _howManyCgi_pass, _howManyCgi_path, _howManyCgi_ext, _howManyRoot_location, _howManyAutoindex, _howManyReturn;
+    int _howManyIndex_location, _howManyAllow_methods, _howManyUpload_store, _howManyCgi_pass, _howManyCgi_path, _howManyCgi_ext, _howManyRoot_location, _howManyAutoindex, _howManyReturn, _howManyTry_files;
 
 	void parseConfig(const std::string& configFile);
     void parseLocatePart(std::istream &file, std::string &statement, ServerBlock &srv, LocationBlock &loc);

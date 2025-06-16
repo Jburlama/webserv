@@ -84,7 +84,7 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 	}
 
 	if (_howManyIndex_location > 1 || _howManyAllow_methods > 1 || _howManyUpload_store > 1 || _howManyCgi_ext > 1 ||  _howManyCgi_pass > 1 || 
-		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1 || _howManyReturn > 1 || _howManytry_files > 1){	
+		_howManyCgi_path > 1 || _howManyRoot_location > 1 || _howManyAutoindex > 1 || _howManyReturn > 1 || _howManyTry_files > 1){	
 		std::cerr << "There are duplicates keywords in the configuration file (in location's block)" << std::endl;
 		throw std::exception();
 	} 
@@ -100,6 +100,7 @@ void configValues::resetLocationCounters() {
     _howManyRoot_location = 0;
     _howManyAutoindex = 0;
 	_howManyReturn = 0;
+	_howManyTry_files = 0;
 }
 
 bool configValues::detectLocationBlock(std::istream& file, std::string& line, bool& insideLocationBlock, LocationBlock &loc){
