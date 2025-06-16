@@ -58,7 +58,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     std::string matched_prefix = "";
                     size_t matched_length = 0;
 
-                    // Longest prefix match among all locations
+                    // Longest prefix match among all locations (thats how nginx works too)
                     for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
                         if ((url.length() >= it->path.length() && url.compare(0, it->path.length(), it->path) == 0 && it->path.length() > matched_length))
