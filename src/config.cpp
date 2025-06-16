@@ -88,27 +88,31 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 		}
 		_howManyServerName++;
 	}
-
-	/* [0] will be the number(s) (404) [1] will be the path and so foward */
 	else if (key == "error_page"){
-	    std::vector<std::string> numError;
-	    std::string token;
+        std::vector<std::string> numError;
+        std::string token;
 
-	    // Gather numError
-	    while (iss >> token && token[0] != '/')
-	        numError.push_back(token);
+        // Gather numError(s)
+        while (iss >> token && token[0] != '/')
+            numError.push_back(token);
 
-	    // Now token is the path
-	    if (!numError.empty() && token[0] == '/'){
-		    for (size_t i = 0; i < numError.size(); ++i){
-		        srv.errorPage.push_back(numError[i] + " " + token);
-		    }
-		}
-		else{
-		    std::cerr << "Invalid error_page directive!" << std::endl;
-			throw std::exception();
-		}
-	}
+        // Now token is the path
+        if (!numError.empty() && token[0] == '/'){
+            for (size_t i = 0; i < numError.size(); ++i){
+                int code = std::atoi(numError[i].c_str());
+                srv.errorPage[code] = token; // map error code to path
+            }
+        }
+        else{
+            std::cerr << "Invalid error_page directive!" << std::endl;
+            throw std::exception();
+        }
+        std::cout << "Error Pages for this server block:" << std::endl;
+        for (std::map<int, std::string>::const_iterator it = srv.errorPage.begin(); it != srv.errorPage.end(); ++it) {
+            std::cout << "Error " << it->first << " " << it->second << std::endl;
+        }
+
+    }
 	else if (key == "client_max_body_size"){
 		iss >> srv.clientMaxBodySize;
 		_howManyClient++;
