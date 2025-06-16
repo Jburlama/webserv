@@ -22,4 +22,6 @@ class File
         size_t      &get_file_bytes()   {return this->_file_bytes;};
         std::string &get_file_path()    {return this->_file_path;};
         char        *get_file_buffer()  {return this->_file_buffer;};
+
+        void        set_file_bytes(size_t bytes) {this->_file_bytes = bytes;};
 };

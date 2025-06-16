@@ -1,4 +1,6 @@
 #include "../includes/Client.hpp"
+#include <cstddef>
+#include <stdexcept>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
@@ -27,6 +29,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         std::string root;
         std::string index;
         std::string temp;
+        int         status;
 
         for (int i = 0; i < bytes + 1; ++i)
         {
@@ -58,7 +61,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     // Longest prefix match among all locations
                     for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
-                        if (url.compare(0, it->path.length(), it->path) == 0 && it->path.length() > matched_length)
+                        if ((url.length() >= it->path.length() && url.compare(0, it->path.length(), it->path) == 0 && it->path.length() > matched_length))
                         {
                             matched_prefix = it->path;          //What is the prefix (location prefix {)
                             matched_length = it->path.length(); //What is the length of the prefir, by other words, /in (length 3)  /index (lenght 6)
@@ -75,17 +78,30 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                         }
                     }
 
+                    std::cout << url << std::endl;
                     std::cout << matched_prefix << " " << matched_length << std::endl; //testing if its getting the appropriate location block
 
                     // Build the path relative to the matched location prefix
-                    std::string relative_path = url.substr(matched_prefix.length());
-                    std::cout << relative_path << std::endl;
+                    std::string relative_path = "";
+                    if (matched_prefix.length() <= url.length())
+                        relative_path = url.substr(matched_prefix.length());
+                    
                     if (!relative_path.empty() && relative_path[0] == '/')
                         relative_path = relative_path.substr(1);
 
                     std::string full_path = root;
-                    if (!relative_path.empty())
-                        full_path += "/" + relative_path;
+                    if (!relative_path.empty()) {
+                        if (!root.empty() && root[root.size() - 1] != '/')
+                            full_path += "/";
+                        full_path += relative_path;
+                    }
+
+
+                    std::cout << "root: " << root << std::endl;
+                    std::cout << "matched_prefix: " << matched_prefix << std::endl;
+                    std::cout << "relative_path: " << relative_path << std::endl;
+                    std::cout << "full_path: " << full_path << std::endl;
+
 
                     // If the resolved path is a directory, append index
                     struct stat path_stat;
@@ -112,13 +128,14 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                             if (!it->index.empty())
                                 index = it->index; // Use location's index if it's set
                             std::cout << "Index: " << index << "\n";
+                            if (!it->index.empty())
+                                index = it->index;
                             break ;
                         }
                     }
                     this->_path = root + "/" + index;
 
                     std::cout << "Path: " << this->_path << "\n"; */
-
                     if (this->_path.substr(this->_path.length() - 3).compare(".py") == 0)
                         this->set_is_cgi(true);
                     else 
@@ -137,7 +154,10 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     --i;
                     if (this->_request_headers.find("Content-Length") != this->_request_headers.end() ||
                         this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
+                    {  
+                        this->set_parser_state(START);
                         this->_parser_state = BODY;
+                    }
                     else
                         this->_parser_state = END;
                     this->set_bytes_read(i);
@@ -152,8 +172,12 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     else if (this->_request_headers.find("Transfer-Encoding") != this->_request_headers.end())
                         std::cout << "Transfer-Enconding\n" << std::flush;
 
+                    if (body_size > static_cast<size_t>(std::atoi(server.clientMaxBodySize.c_str())))
+                        throw std::logic_error("413");
+
                     while(i < bytes)
                         this->_request_body.insert(this->_request_body.end(), buffer[i++]);
+
 
                     this->set_bytes_read(i + this->get_bytes_read());
                     if (this->get_bytes_read() < body_size)
@@ -163,17 +187,19 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     }
                     else
                     {
-                        this->_parse_request_body();
-                        this->set_status(201);
+                        status = this->_parse_request_body();
+                        this->set_status(status);
                         this->_parser_state = END;
                         this->set_parser_state(START);
-                        this->set_has_body(true);
+                        if (status == 201)
+                            this->set_has_body(true);
+                        else if (status == 302)
+                            this->set_has_body(false);
                         this->set_upload_length(body_size);
                         this->_request_body.clear();
                         return ;
                     }
 
-                    this->set_has_body(true);
                     break ;
 
                 case END:
@@ -201,6 +227,12 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         {
             this->_path = "content/html/error_pages/505_HTTP_Version_Not_Supported.html";
             this->_status = 505;
+            this->set_parser_state(START);
+        }
+        else if (error_msg.compare("413") == 0)
+        {
+            this->_path = "/home/jhonas/42/webserv/content/html/error_pages/413_Request_Entity_Too_Large.html";
+            this->_status = 413;
             this->set_parser_state(START);
         }
         else

@@ -18,7 +18,7 @@ HttpRequest &HttpRequest::operator=(HttpRequest &other)
 }
 
 
-void HttpRequest::_parse_request_body()
+int HttpRequest::_parse_request_body() // return 201 Created or 302 Found
 {
     std::string content_type;
     std::string str(&this->_request_body[0]);
@@ -53,7 +53,7 @@ void HttpRequest::_parse_request_body()
         filename_end = str.find('"', filename_poss);
         filename = str.substr(filename_poss, filename_end - filename_poss);
         if (filename.empty())
-            return ;
+            return 302;
         filename = "upload/" + filename;
         this->_location = filename;
 
@@ -62,7 +62,9 @@ void HttpRequest::_parse_request_body()
             throw std::logic_error("Multipart header end not found");
         
         file_start = header_end + 4;  // Skip \r\n\r\n
-        file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)       
+        file_end = std::atoi(this->_request_headers["Content-Length"][0].c_str()); // Find end of file data (before closing boundary)
+        if (file_end - file_start == 0)
+            return 302;
 
         // Write to file
          std::ofstream out_file(filename.c_str(), std::ios::binary);
@@ -72,6 +74,7 @@ void HttpRequest::_parse_request_body()
          out_file.write(&this->_request_body[file_start], file_end);
          out_file.close();
     }
+    return 201;
 }
 
 std::map<std::string, std::vector<std::string> > HttpRequest::_parse_request_header(int &i, const char *str)

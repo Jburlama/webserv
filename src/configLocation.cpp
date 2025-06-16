@@ -1,5 +1,4 @@
 #include "../includes/config.hpp"
-#include <iostream>
 
 void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &loc) {
 	std::istringstream iss(statement);
