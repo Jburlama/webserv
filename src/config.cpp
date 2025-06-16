@@ -41,6 +41,7 @@ void configValues::defaultPreConfigs(){
 	_howManyCgi_ext = 0;
 	_howManyRoot_location = 0;
 	_howManyAutoindex = 0;
+    _howManyReturn = 0;
 
 	
 	_numOfLocInSrvBlock = -1;
