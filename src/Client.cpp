@@ -51,20 +51,35 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     break;
 
                 case PATH:
-                    url = this->_parse_path(i, str);
                     root = server.root;
                     index = server.index;
-
-                    for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                    url = this->_parse_path(i, str);
+                    std::cout << "Url: " << url << "\n";
+                
+                    if (url.find(".") == std::string::npos) // url is the location paht
                     {
-                        if (url == it->path || url == "/upload")
+                        for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                         {
-                            if (!it->root.empty())
-                                root = it->root;
-                            if (!it->index.empty())
-                                index = it->index;
-                            break ;
+                            if (url == it->path || url == "/upload")
+                            {
+                                if (!it->root.empty())
+                                    root = it->root;
+                                if (!it->index.empty())
+                                    index = it->index;
+                                break ;
+                            }
+                            else
+                            index = "error_pages/404_not_found.html";
                         }
+                    }
+                    else // File is in url
+                    {
+                        std::string::size_type pos = url.find_last_of('/');
+                        index = url.substr(pos + 1);
+                        if (pos == 0)
+                            url = "/";
+                        else
+                            url = url.substr(0, pos);
                     }
                     this->_path = root + "/" + index;
 
