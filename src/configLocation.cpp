@@ -78,7 +78,6 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 			loc.returnLoc += key;
 		}
 		_howManyReturn++;
-		std::cout << loc.returnLoc << std::endl;
 	}
 	else {
 		std::cerr << "Invalid keyword in location block: " << statement << std::endl;
