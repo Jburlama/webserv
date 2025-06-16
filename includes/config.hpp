@@ -37,7 +37,7 @@ struct ServerBlock{
     std::string                listen;
     std::string                host;
     std::string                serverName;
-	std::vector<std::string>   errorPage;
+	std::map<int, std::string> errorPage;
     std::string                clientMaxBodySize;
     std::string                root;
     std::string                index;
