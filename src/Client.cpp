@@ -206,7 +206,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
         }
         else if (error_msg.compare("413") == 0)
         {
-            this->_path = "/home/jhonas/42/webserv/content/html/error_pages/413_Request_Entity_Too_Large.html";
+            this->_path = "content/html/error_pages/413_Request_Entity_Too_Large.html";
             this->_status = 413;
             this->set_parser_state(START);
         }

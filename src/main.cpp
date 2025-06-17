@@ -14,7 +14,7 @@ int main (int argc, char *argv[], char *env[])
 	{
         std::string configFile;
         if (argc == 1)
-            configFile = "/home/jhonas/42/webserv/config/default.conf";
+            configFile = "config/default.conf";
         else
             configFile = argv[1];
 

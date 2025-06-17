@@ -107,7 +107,7 @@ void Core::client_multiplex(char **env)
                 client.set_status(504);
                 // Prepare error response
                 client.set_status(504);
-                std::string error_page = "/home/jhonas/42/webserv/content/html/error_pages/504.html";
+                std::string error_page = "content/html/error_pages/504.html";
                 client.set_file(error_page.c_str());
 
                 // Transition to response building
@@ -443,9 +443,6 @@ void    Core::execute_cgi(Client &client, char **env)
     //FD_SET(stdin_pipe[1], &this->_write_set);
     FD_SET(stdout_pipe[0], &this->_read_set);
 
-    // Update biggest_fd if needed
-    //if (stdin_pipe[1] > this->_biggest_fd)
-    //    this->_biggest_fd = stdin_pipe[1];
     if (stdout_pipe[0] > this->_biggest_fd)
         this->_biggest_fd = stdout_pipe[0];
 
@@ -461,7 +458,6 @@ void    Core::execute_cgi(Client &client, char **env)
             write(stdin_pipe[1], &body[0], body.size());
     }
     close(stdin_pipe[1]); // Close after writing
-    // is Post sent via request body or PATH_INFO?
 }
 
 void    Core::handle_cgi_output(Client &client)
