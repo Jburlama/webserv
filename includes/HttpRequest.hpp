@@ -38,12 +38,13 @@ class HttpRequest
         std::vector<char>                                   _request_body;
         bool                                                _has_body;
         size_t                                              _bytes_read;
+        std::string                                         _path_info;
 
         std::string                                         _parse_method(int &i, const char *str);
         std::string                                         _parse_path(int &i, const char *str);
         std::string                                         _parse_request_version(int &i, const char *str);
         std::map<std::string, std::vector<std::string> >    _parse_request_header(int &i, const char *str);
-        int                                                _parse_request_body();
+        int                                                 _parse_request_body();
 
     public:
         HttpRequest():_parser_state(START),_has_body(false) {};
@@ -58,6 +59,7 @@ class HttpRequest
         std::vector<char>                                   &get_request_body() {return this->_request_body;};
         bool                                                get_has_body() {return this->_has_body;};
         size_t                                              get_bytes_read() {return this->_bytes_read;};
+        std::string                                         get_path_info() { return this->_path_info;};
 
         void    set_parser_state(int state) {this->_parser_state = state;};
         void    set_has_body(bool has) {this->_has_body = has;};

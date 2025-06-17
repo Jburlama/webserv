@@ -85,6 +85,41 @@ void Core::client_multiplex(char **env)
         // Check clients
         for (std::map<int, Client>::iterator it = this->_clients.begin(); it != this->_clients.end(); ++it)
         {
+            Client &client = it->second;
+
+            // CGI Timeout Handling
+            if (client.get_client_state() == CGI_PROCESSING && time(NULL) - client.get_cgi_start_time() > CGI_TIMEOUT)
+            {
+                // Kill CGI process
+                kill(client.get_cgi_pid(), SIGKILL);
+                waitpid(client.get_cgi_pid(), NULL, 0);
+
+                // Cleanup pipes
+                if (client.get_cgi_stdin() != -1)
+                    close(client.get_cgi_stdin());
+                if (client.get_cgi_stdout() != -1)
+                {
+                    FD_CLR(client.get_cgi_stdout(), &_read_set);
+                    close(client.get_cgi_stdout());
+                }
+
+                // Prepare error response
+                client.set_status(504);
+                // Prepare error response
+                client.set_status(504);
+                std::string error_page = "/home/jhonas/42/webserv/content/html/error_pages/504.html";
+                client.set_file(error_page.c_str());
+
+                // Transition to response building
+                int file_fd = client.get_file_fd();
+                if (file_fd != -1)
+                {
+                    FD_SET(file_fd, &this->_read_set);
+                    if (file_fd > this->_biggest_fd) this->_biggest_fd = file_fd;
+                }
+                client.set_client_state(BUILD_RESPONSE);
+            }
+
             if (FD_ISSET(it->first, &read_set_copy) || // checks if client fd is in set 
                 FD_ISSET(it->second.get_file_fd(), &read_set_copy) || // Checks if cliet file fd is in set
                 FD_ISSET(it->second.get_cgi_stdin(), &write_set_copy) ||  // Check if cgi stdin is ready to write to
@@ -312,6 +347,8 @@ void    Core::execute_cgi(Client &client, char **env)
     int stdout_pipe[2];
     pid_t pid;
 
+    client.set_cgi_start_time(time(NULL)); 
+
     // Create pipes for CGI communication
     if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0)
         throw std::runtime_error("Pipe creation failed");
@@ -332,16 +369,60 @@ void    Core::execute_cgi(Client &client, char **env)
         close(stdin_pipe[0]);
         close(stdout_pipe[1]);
 
-        // TODO: Prepare CGI environment
-        char** cgi_envp = env;
+        // Prepare CGI environment
+        std::vector<std::string> env_strings;
+        std::string              path_info;
+        
+        // Copy base environment
+        for (char **e = env; *e; e++)
+            env_strings.push_back(*e);
+
+
+        // Handle POST data - put in PATH_INFO
+        if (client.get_method() == "POST" && client.get_has_body())
+        {
+            // Convert request body to string
+            const std::vector<char>& body = client.get_request_body();
+            std::string body_str(body.begin(), body.end());
+            path_info = std::string(body.begin(), body.end());
+        }
+        else // Use actual query string for GET requests
+            path_info = client.get_path_info();
+
+        // Add content-related headers if available
+        std::map<std::string, std::vector<std::string> > headers = client.get_request_headers();
+        if (headers.find("Content-Type") != headers.end())
+            env_strings.push_back("CONTENT_TYPE=" + headers["Content-Type"][0]);
+        if (headers.find("Content-Length") != headers.end())
+            env_strings.push_back("CONTENT_LENGTH=" + headers["Content-Length"][0]);
+
+        env_strings.push_back("PATH_INFO=" + path_info);
+        env_strings.push_back("REQUEST_METHOD=" + client.get_method());
+        env_strings.push_back("SCRIPT_NAME=" + client.get_path());
+    
+        if (client.get_has_body())
+        {
+            env_strings.push_back("CONTENT_LENGTH=" + headers["Content-Length"][0]);
+            env_strings.push_back("CONTENT_TYPE=" + headers["Content-Type"][0]);
+        }
+
+        // Convert to char* array
+        char **cgi_env = new char*[env_strings.size() + 1];
+        for (size_t i = 0; i < env_strings.size(); i++)
+            cgi_env[i] = strdup(env_strings[i].c_str());
+
+        cgi_env[env_strings.size()] = NULL;
 
         // Execute CGI
         std::string script_path = client.get_path();
         const char* argv[] = {script_path.c_str(), NULL};
 
-        execve(script_path.c_str(), const_cast<char**>(argv), cgi_envp);
+        execve(script_path.c_str(), const_cast<char**>(argv), cgi_env);
 
-        //TODO: Cleanup if execve fails
+        // Cleanup if execve fails
+        for (size_t i = 0; i < env_strings.size(); i++)
+            free(cgi_env[i]);
+        delete[] cgi_env;
         exit(EXIT_FAILURE);
     }
     // Close unused pipe ends
@@ -372,10 +453,14 @@ void    Core::execute_cgi(Client &client, char **env)
     if (client.get_fd() == this->_biggest_fd)
         --this->_biggest_fd;
 
-    // TODO: Write POST data to CGI (if any)
-    // if (!client.get_body().empty()) {
-    //     client.set_cgi_input(client.get_body());
-    // }
+    // Write request body to CGI's stdin (if present)
+    if (client.get_has_body())
+    {
+        const std::vector<char>& body = client.get_request_body();
+        if (!body.empty())
+            write(stdin_pipe[1], &body[0], body.size());
+    }
+    close(stdin_pipe[1]); // Close after writing
     // is Post sent via request body or PATH_INFO?
 }
 
@@ -392,6 +477,16 @@ void    Core::handle_cgi_output(Client &client)
         throw std::runtime_error("Core.cpp:383");
     if (bytes == 0) // CGI send EOF
     {
+        int status;
+        waitpid(client.get_cgi_pid(), &status, 0);  // Reap process
+
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+        {
+            // Handle CGI execution errors
+            client.set_status(500);
+            // ... similar error handling as timeout ...
+        }
+
         client.set_client_state(BUILD_RESPONSE_FROM_CGI);
 
         FD_CLR(client.get_cgi_stdout(), &this->_read_set); // rm from read set

@@ -27,6 +27,7 @@
 #include "config.hpp"
 
 #define BUFFER_SIZE 40000
+#define CGI_TIMEOUT 5  // Seconds before killing CGI
 
 class Core
 {

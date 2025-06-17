@@ -1,10 +1,8 @@
 #include "../includes/webserv.hpp"
 
 void signalHandler(int signum){
-    std::cout << "\nInterrupt signal received: " << signum << std::endl;
-
+    (void)signum;
     throw std::exception();
-    //exit(signum);
 }
 
 
@@ -30,17 +28,14 @@ int main (int argc, char *argv[], char *env[])
 	{
         perror(e.what());
         return 2;
-        exit(STDERR_FILENO);
 	}
 	catch (std::logic_error &e)
 	{
         std::cerr << e.what() << "\n";
         return 2;
-        exit(STDERR_FILENO);
 	}
 	catch (std::exception &e) //THIS WILL STOP THE LOOP "Probably try{}catch{} to create config before the Core". Check how this is supposed to be handled
 	{
         return 2;
-		exit(STDERR_FILENO);
 	}
 }

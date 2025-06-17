@@ -173,9 +173,19 @@ std::string HttpRequest::_parse_path(int &i, const char *str)
     if (std::isspace(str[i]))
         throw std::logic_error("PATH");
 
-    while (!std::isspace(str[i]))
+    _path_info.clear();
+
+    // Parse path until '?' or space
+    while (!std::isspace(str[i]) && str[i] != '?' && str[i])
         path += str[i++];
 
+    // Parse query string if present
+    if (str[i] == '?')
+    {
+        ++i;  // Skip '?'
+        while (!std::isspace(str[i]) && str[i])
+            _path_info += str[i++];
+    }
     return path;
 }
 

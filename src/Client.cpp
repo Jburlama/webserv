@@ -1,24 +1,14 @@
 #include "../includes/Client.hpp"
-#include <cstddef>
-#include <stdexcept>
-#include <cstdio>
 
 Client::Client(int fd, int server_fd)
 :_fd(fd),_server_fd(server_fd),_client_state(BUILD_REQUEST),_bytes_sent(0),
-_status(0),_is_cgi(false),_cgi_pid(-1),_cgi_stdin(-1),_cgi_stdout(-1),_cgi_bytes_read(-1)
+_status(0),_is_cgi(false),_cgi_pid(-1),_cgi_stdin(-1),_cgi_stdout(-1),_cgi_bytes_read(-1),_cgi_start_time(0)
 {
     this->set_last_activity();
 }
 
 Client::~Client()
 {
-	// if (this->_response_body) {
-	//        delete[] this->_response_body;
-	//        this->_response_body = NULL;
-	//    }
-    // Close file descriptors if open
-    // if (this->_file_fd > 0)
-    //     close(this->_file_fd);
 }
 
 void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &server)
@@ -48,7 +38,6 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     
                 case METHOD:
                     this->_method = this->_parse_method(i, str);
-                    std::cout << "Method: " << this->_method << "\n";
                     this->_parser_state = PATH;
                     break;
 
@@ -57,21 +46,39 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     root = server.root;
                     index = server.index;
                     url = this->_parse_path(i, str);
-                
+                    bool has_cgi;
+
+                    has_cgi = false;
                     if (this->_method == "DELETE")
                     {
                         std::string file_to_remove = "upload" + url;
                         std::cout << "File to remove: " << file_to_remove << "\n";
                         std::remove(file_to_remove.c_str());
                     }
-                    if (url.find(".") == std::string::npos) // url is the location paht
+
+                    for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                    {
+                        if (!it->cgi_ext.empty())
+                            has_cgi = true;
+                    }
+                    if (url.find(".") == std::string::npos) // url is the location path
                     {
                         for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                         {
                             if (url == it->path || url == "/upload")
                             {
                                 if (!it->root.empty())
-                                    root = it->root;
+                                {
+                                    if (url != "/upload")
+                                        root = it->root + url;
+                                    else
+                                        root = it->root;
+                                }
+                                else
+                                {
+                                    if (url != "/upload")
+                                        root += url;
+                                }
                                 if (!it->index.empty())
                                     index = it->index;
                                 break ;
@@ -83,30 +90,27 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     }
                     else// File is in url
                     {
-                        std::string::size_type pos = url.find_last_of('/');
-                        index = url.substr(pos + 1);
-                        if (pos == 0)
-                            url = "/";
-                        else
-                            url = url.substr(0, pos);
-                        if (index.substr(index.length() - 3).compare(".py") == 0)
+                        if (has_cgi)
                         {
-                            this->_path = root + "/" + "error_pages/404_not_found.html";
-                            for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
+                            // Check if URL ends with .py (CGI script)
+                            if (url.size() > 3 && url.substr(url.size() - 3) == ".py")
                             {
-                                if (it->path == "/cgi-bin" && it->index == index)
-                                {
-                                    this->_path = "cgi-bin/" + index;
-                                    this->set_is_cgi(true);
-                                }
-                            }
+                                this->_path = "cgi-bin/" + url.substr(url.find_last_of('/') + 1);
+                                this->set_is_cgi(true);
+                            } 
                         }
-                        else 
+                        else
+                        {
+                            std::string::size_type pos = url.find_last_of('/');
+                            index = url.substr(pos + 1);
+                            if (pos == 0)
+                                url = "/";
+                            else
+                                url = url.substr(0, pos);
                             this->_path = root + "/" + index;
+                        }
                     }
 
-
-                    std::cout << "Path: " << this->_path << "\n";
                     this->_parser_state = VERSION;
                     break ;
 
@@ -289,7 +293,7 @@ void Client::set_file(const char *file_path)
             throw std::runtime_error("Client.cpp:139"); // System fail callign stat()
     }
 
-    if (S_ISDIR(this->_file_stats.st_mode)) // TODO: expand this if file_path is a dir
+    if (S_ISDIR(this->_file_stats.st_mode))
         std::cout << "This is a directory\n" << std::flush;
 
     file_fd = open(file.c_str(), O_RDONLY); // Opens the file for read mode

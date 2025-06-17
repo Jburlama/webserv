@@ -56,6 +56,9 @@ void HttpResponse::set_response_header()
         case 413:
             this->_response_header += "413 " + this->_description + "\r\n";
             break ;
+        case 504:
+            this->_response_header += "504 " + this->_description + "\r\n";
+            break ;
         case 505:
             this->_response_header += "505 " + this->_description + "\r\n";
             break ;
@@ -110,6 +113,9 @@ void HttpResponse::set_status_code(int code)
             break ;
         case 413:
             this->_description = "Request Entity Too Large";
+            break ;
+        case 504:
+            this->_description = "Gateway Timeout";
             break ;
         case 505:
             this->_description = "HTTP Version Not Supported";

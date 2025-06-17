@@ -88,11 +88,6 @@ print(f"""
     
     {f'<div class="message">{html.escape(message)}</div>' if message else ''}
     
-    <h2>Upload File</h2>
-    <form method="post" enctype="multipart/form-data">
-        <input type="file" name="file" required>
-        <input type="submit" name="action" value="upload">
-    </form>
     
     <h2>Files in {UPLOAD_DIR}/</h2>
     <table>

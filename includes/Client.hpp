@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdio>
+#include <cstdio>
 #include <iterator>
 #include <stdexcept>
 #include <sys/select.h>
@@ -45,6 +46,7 @@ public File
         int                     _cgi_stdout;
         ssize_t                 _cgi_bytes_read;
         std::vector<char>       _cgi_output;
+        time_t                  _cgi_start_time;
 
     public:
         Client():_fd(-1),_last_activity(0),_client_state(BUILD_REQUEST),_bytes_sent(0) {};
@@ -63,6 +65,7 @@ public File
         int                 get_cgi_stdout()            {return this->_cgi_stdout;};
         ssize_t             get_cgi_bytes_read()        {return this->_cgi_bytes_read;};
         std::vector<char>   &get_cgi_output()           {return this->_cgi_output;};
+        time_t              get_cgi_start_time()        {return this->_cgi_start_time;}
 
         void    set_status(int status) {this->_status = status;};
         void    set_resquest(const char *buffer, ssize_t bytes, ServerBlock &server);
@@ -80,4 +83,5 @@ public File
         void    set_cgi_stdin(int fd)             {this->_cgi_stdin = fd;};
         void    set_cgi_stdout(int fd)            {this->_cgi_stdout = fd;};
         void    set_cgi_bytes_read(ssize_t bytes) {this->_cgi_bytes_read = bytes;};
+        void    set_cgi_start_time(time_t time)   {this->_cgi_start_time = time;}
 };
