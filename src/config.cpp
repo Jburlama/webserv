@@ -66,6 +66,15 @@ void configValues::defaultConfigs(ServerBlock &srv){
 	    srv.locations[_numOfLocInSrvBlock].allow_methods = "GET";
 }
 
+bool isAllDigits(const std::string& s) {
+    if (s.empty()) return false;
+    for (size_t i = 0; i < s.length(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(s[i])))
+            return false;
+    }
+    return true;
+}
+
 void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	std::istringstream iss(statement);
 	std::string key;
@@ -99,13 +108,19 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 
         // Now token is the path
         if (!numError.empty() && token[0] == '/'){
-            for (size_t i = 0; i < numError.size(); ++i){
-                int code = std::atoi(numError[i].c_str());
-                srv.errorPage[code] = token; // map error code to path
+            for (size_t i = 0; i < numError.size(); ++i){ 
+                if (isAllDigits(numError[i])){
+                    int code = std::atoi(numError[i].c_str());
+                    srv.errorPage[code] = token; // map error code to path
+                }
+                else{
+                    std::cerr << "Invalid argument after error_page" << std::endl;
+                    throw std::exception();
+                }
             }
         }
         else{
-            std::cerr << "Invalid error_page directive!" << std::endl;
+            std::cerr << "Invalid error_page directive in server block!" << std::endl;
             throw std::exception();
         }
         std::cout << "Error Pages for this server block:" << std::endl;
