@@ -119,6 +119,10 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
 	}
 	else if (key == "root"){
 		iss >> srv.root;
+		while (iss >> key){
+			if (!srv.root.empty()) srv.root += " ";
+			srv.root += key;
+		}
 		_howManyRoot++;
 	}
 	else if (key == "index"){

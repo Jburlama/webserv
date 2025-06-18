@@ -48,6 +48,10 @@ void configValues::isKeyWordLocationPart(std::string statement, LocationBlock &l
 	}
 	else if (key == "root") {
 		iss >> loc.root;
+		while (iss >> key){
+			if (!loc.root.empty()) loc.root += " ";
+			loc.root += key;
+		}
 		_howManyRoot_location++;
 	}
 	else if (key == "autoindex") {
