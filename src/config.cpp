@@ -123,10 +123,10 @@ void configValues::isKeyWord(std::string statement, ServerBlock &srv){
             std::cerr << "Invalid error_page directive in server block!" << std::endl;
             throw std::exception();
         }
-        std::cout << "Error Pages for this server block:" << std::endl;
+        /* std::cout << "Error Pages for this server block:" << std::endl;
         for (std::map<int, std::string>::const_iterator it = srv.errorPage.begin(); it != srv.errorPage.end(); ++it) {
             std::cout << "Error " << it->first << " " << it->second << std::endl;
-        }
+        } */
 
     }
 	else if (key == "client_max_body_size"){

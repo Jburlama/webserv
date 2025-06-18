@@ -78,8 +78,8 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                         }
                     }
 
-                    std::cout << url << std::endl;
-                    std::cout << matched_prefix << " " << matched_length << std::endl; //testing if its getting the appropriate location block
+                    /* std::cout << url << std::endl;
+                    std::cout << matched_prefix << " " << matched_length << std::endl; //testing if its getting the appropriate location block */
 
                     // Build the path relative to the matched location prefix
                     std::string relative_path = "";
@@ -97,10 +97,10 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     }
 
 
-                    std::cout << "root: " << root << std::endl;
+                    /* std::cout << "root: " << root << std::endl;
                     std::cout << "matched_prefix: " << matched_prefix << std::endl;
                     std::cout << "relative_path: " << relative_path << std::endl;
-                    std::cout << "full_path: " << full_path << std::endl;
+                    std::cout << "full_path: " << full_path << std::endl; */
 
 
                     // If the resolved path is a directory, append index
@@ -113,7 +113,7 @@ void    Client::set_resquest(const char *buffer, ssize_t bytes, ServerBlock &ser
                     }
 
                     this->_path = full_path;
-                    std::cout << "Path: " << this->_path << std::endl;
+                    /* std::cout << "Path: " << this->_path << std::endl; */
 
                     /* for (std::vector<LocationBlock>::iterator it = server.locations.begin(); it != server.locations.end(); ++it)
                     {
